@@ -35,32 +35,9 @@ pub struct FrequencyTrackerState {
 
 impl Default for FrequencyTrackerState {
     fn default() -> Self {
-        let mut logs = HashMap::new();
-        let today = Local::now().date_naive();
-        
-        // Populate sample past 14 days with some activity for immediate visual delight
-        let sample_offsets = [0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 13];
-        let sample_minutes = [75, 120, 50, 90, 150, 45, 110, 60, 125, 90, 80];
-        for (i, &offset) in sample_offsets.iter().enumerate() {
-            let date = today - Duration::days(offset);
-            let mut habits = HashSet::new();
-            habits.insert("Deep Work Block".to_string());
-            if offset % 2 == 0 {
-                habits.insert("Review Notes".to_string());
-            }
-            logs.insert(
-                date,
-                DailyLog {
-                    minutes_studied: sample_minutes[i % sample_minutes.len()],
-                    pomodoros_completed: (sample_minutes[i % sample_minutes.len()] / 25).max(1),
-                    habits_checked: habits,
-                },
-            );
-        }
-
         Self {
             daily_goal_minutes: 120,
-            logs,
+            logs: HashMap::new(),
             habits: vec![
                 HabitItem {
                     id: "h1".into(),
@@ -88,6 +65,10 @@ impl Default for FrequencyTrackerState {
 }
 
 impl FrequencyTrackerState {
+    pub fn clear_history(&mut self) {
+        self.logs.clear();
+    }
+
     pub fn today_log_mut(&mut self) -> &mut DailyLog {
         let today = Local::now().date_naive();
         self.logs.entry(today).or_default()

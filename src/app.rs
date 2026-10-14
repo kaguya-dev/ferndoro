@@ -706,6 +706,27 @@ impl FernDoroApp {
 
             ui.add_space(16.0);
 
+            // Data & History Management
+            card_frame(palette).show(ui, |ui| {
+                ui.label(RichText::new("Data & History Management").size(16.0).strong().color(Color32::WHITE));
+                ui.label(RichText::new("Clear recorded study sessions, streaks, and heatmap logs to start with a fresh slate.").size(12.5).color(palette.text_secondary));
+                ui.add_space(8.0);
+
+                let clear_btn = egui::Button::new(RichText::new(format!("{} Clear Study History & Streaks", TRASH)).strong().color(Color32::WHITE))
+                    .fill(Color32::from_rgb(185, 28, 28))
+                    .corner_radius(CornerRadius::same(8));
+
+                if ui.add(clear_btn).clicked() {
+                    self.frequency.clear_history();
+                    self.pomodoro.total_completed_sessions = 0;
+                    self.pomodoro.current_cycle_count = 0;
+                    self.save_state();
+                    self.set_toast("Study history and streaks have been cleared!");
+                }
+            });
+
+            ui.add_space(16.0);
+
             // About FernDoro
             card_frame(palette).show(ui, |ui| {
                 ui.label(RichText::new(format!("{} About FernDoro", LOGO_LEAF)).size(15.0).strong().color(palette.accent_glow));
