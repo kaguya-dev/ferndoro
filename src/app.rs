@@ -3,6 +3,7 @@ use egui::{epaint::CornerRadius, Color32, Margin, RichText, ScrollArea, Ui, Vec2
 
 use crate::cycle::StudyCycleState;
 use crate::frequency::FrequencyTrackerState;
+use crate::icons::*;
 use crate::pomodoro::{PomodoroPhase, PomodoroState, TimerStatus};
 use crate::storage::{AppData, Storage};
 use crate::theme::{ThemeMode, ThemePalette};
@@ -125,7 +126,7 @@ impl eframe::App for FernDoroApp {
                     if created_at.elapsed().as_secs() < 4 {
                         ui.add_space(8.0);
                         ui.horizontal(|ui| {
-                            status_pill(ui, &format!("✨ {}", msg), palette.accent_primary, Color32::WHITE);
+                            status_pill(ui, &format!("{} {}", SPARKLE, msg), palette.accent_primary, Color32::WHITE);
                         });
                     }
                 }
@@ -140,9 +141,9 @@ impl eframe::App for FernDoroApp {
 impl FernDoroApp {
     fn render_top_bar(&mut self, ui: &mut Ui, palette: &ThemePalette) {
         ui.horizontal(|ui| {
-            // App Title & Brand
+            // App Title & Brand with crisp leaf icon
             ui.label(
-                RichText::new("🌿 FernDoro")
+                RichText::new(format!("{} FernDoro", LOGO_LEAF))
                     .size(20.0)
                     .strong()
                     .color(palette.accent_glow),
@@ -150,20 +151,21 @@ impl FernDoroApp {
 
             ui.add_space(24.0);
 
-            // Tab Buttons
+            // Tab Buttons with high-res Nerd Font icons
             let tabs = [
-                (ActiveTab::Pomodoro, "⏱ Pomodoro"),
-                (ActiveTab::StudyCycle, "🔄 Study Cycle"),
-                (ActiveTab::FrequencyTracker, "📊 Frequency Tracker"),
-                (ActiveTab::Settings, "⚙ Settings"),
+                (ActiveTab::Pomodoro, TAB_POMODORO, "Pomodoro"),
+                (ActiveTab::StudyCycle, TAB_CYCLE, "Study Cycle"),
+                (ActiveTab::FrequencyTracker, TAB_FREQUENCY, "Frequency Tracker"),
+                (ActiveTab::Settings, TAB_SETTINGS, "Settings"),
             ];
 
-            for (tab, label) in tabs {
+            for (tab, icon, title) in tabs {
                 let is_active = self.active_tab == tab;
                 let bg_color = if is_active { palette.accent_primary } else { palette.bg_card };
                 let text_color = if is_active { Color32::WHITE } else { palette.text_secondary };
 
-                let btn = egui::Button::new(RichText::new(label).strong().color(text_color))
+                let label_text = format!("{} {}", icon, title);
+                let btn = egui::Button::new(RichText::new(label_text).strong().size(13.0).color(text_color))
                     .fill(bg_color)
                     .stroke(egui::Stroke::new(1.0_f32, if is_active { palette.accent_glow } else { palette.bg_card_border }))
                     .corner_radius(CornerRadius::same(8));
@@ -180,7 +182,7 @@ impl FernDoroApp {
                 let streak = self.frequency.current_streak_days();
                 status_pill(
                     ui,
-                    &format!("🔥 {}d streak", streak),
+                    &format!("{} {}d streak", FLAME, streak),
                     palette.bg_card,
                     palette.accent_secondary,
                 );
@@ -191,7 +193,7 @@ impl FernDoroApp {
                 let active_name = self.cycle.active_subject().map(|s| s.name.as_str()).unwrap_or("General Study");
                 status_pill(
                     ui,
-                    &format!("🎯 {}", active_name),
+                    &format!("{} {}", TARGET, active_name),
                     palette.bg_card,
                     palette.text_primary,
                 );
@@ -208,9 +210,9 @@ impl FernDoroApp {
 
             // Active subject selector row
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Current Target:").color(palette.text_secondary));
+                ui.label(RichText::new("Current Target:").size(14.0).color(palette.text_secondary));
                 egui::ComboBox::from_id_salt("pomodoro_subject_selector")
-                    .selected_text(RichText::new(&self.pomodoro.active_subject_name).strong().color(palette.accent_glow))
+                    .selected_text(RichText::new(&self.pomodoro.active_subject_name).size(14.0).strong().color(palette.accent_glow))
                     .show_ui(ui, |ui| {
                         for (i, subject) in self.cycle.subjects.iter().enumerate() {
                             if ui.selectable_label(self.pomodoro.active_subject_name == subject.name, &subject.name).clicked() {
@@ -251,14 +253,14 @@ impl FernDoroApp {
 
             ui.add_space(20.0);
 
-            // Primary Control Buttons
+            // Primary Control Buttons with crisp icons
             ui.horizontal(|ui| {
                 let (play_text, play_color) = match self.pomodoro.status {
-                    TimerStatus::Running => ("⏸ Pause", palette.warning),
-                    TimerStatus::Paused | TimerStatus::Stopped => ("▶ Start Focus", palette.accent_primary),
+                    TimerStatus::Running => (format!("{} Pause", PAUSE), palette.warning),
+                    TimerStatus::Paused | TimerStatus::Stopped => (format!("{} Start Focus", PLAY), palette.accent_primary),
                 };
 
-                let primary_btn = egui::Button::new(RichText::new(play_text).size(16.0).strong().color(Color32::WHITE))
+                let primary_btn = egui::Button::new(RichText::new(play_text).size(15.0).strong().color(Color32::WHITE))
                     .fill(play_color)
                     .min_size(Vec2::new(140.0, 42.0))
                     .corner_radius(CornerRadius::same(10));
@@ -273,10 +275,10 @@ impl FernDoroApp {
 
                 ui.add_space(12.0);
 
-                let reset_btn = egui::Button::new(RichText::new("↺ Reset").size(14.0).color(palette.text_secondary))
+                let reset_btn = egui::Button::new(RichText::new(format!("{} Reset", RESET)).size(13.5).color(palette.text_secondary))
                     .fill(palette.bg_card)
                     .stroke(egui::Stroke::new(1.0_f32, palette.bg_card_border))
-                    .min_size(Vec2::new(90.0, 42.0))
+                    .min_size(Vec2::new(95.0, 42.0))
                     .corner_radius(CornerRadius::same(10));
 
                 if ui.add(reset_btn).clicked() {
@@ -286,7 +288,7 @@ impl FernDoroApp {
 
                 ui.add_space(8.0);
 
-                let skip_btn = egui::Button::new(RichText::new("⏭ Skip").size(14.0).color(palette.text_secondary))
+                let skip_btn = egui::Button::new(RichText::new(format!("{} Skip", SKIP)).size(13.5).color(palette.text_secondary))
                     .fill(palette.bg_card)
                     .stroke(egui::Stroke::new(1.0_f32, palette.bg_card_border))
                     .min_size(Vec2::new(90.0, 42.0))
@@ -300,9 +302,9 @@ impl FernDoroApp {
 
             ui.add_space(24.0);
 
-            // Presets and Metrics row
+            // Presets row
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Timer Presets:").color(palette.text_secondary));
+                ui.label(RichText::new("Timer Presets:").size(13.0).color(palette.text_secondary));
                 
                 let presets = [
                     (25, 5, "25 / 5 Classic"),
@@ -328,16 +330,16 @@ impl FernDoroApp {
 
             ui.add_space(24.0);
 
-            // Session Stats Cards Row
+            // Session Stats Cards Row with crisp vector icons
             ui.horizontal(|ui| {
                 let session_str = format!("{}/{}", self.pomodoro.current_cycle_count, self.pomodoro.config.sessions_before_long_break);
-                stat_card(ui, palette, "🎯", "Long Break In", &session_str, Some("sessions until 15m rest"));
+                stat_card(ui, palette, TARGET, "Long Break In", &session_str, Some("sessions until 15m rest"));
                 
                 let today_log = self.frequency.today_log();
-                stat_card(ui, palette, "🍅", "Completed Today", &format!("{} Pomodoros", today_log.pomodoros_completed), Some(&format!("{}m focused today", today_log.minutes_studied)));
+                stat_card(ui, palette, CLOCK, "Completed Today", &format!("{} Pomodoros", today_log.pomodoros_completed), Some(&format!("{}m focused today", today_log.minutes_studied)));
                 
                 let total_sessions = self.pomodoro.total_completed_sessions;
-                stat_card(ui, palette, "🏆", "All-Time Sessions", &format!("{}", total_sessions), Some("total completed"));
+                stat_card(ui, palette, TROPHY, "All-Time Sessions", &format!("{}", total_sessions), Some("total completed"));
             });
         });
     }
@@ -349,20 +351,20 @@ impl FernDoroApp {
                 ui.horizontal(|ui| {
                     ui.vertical(|ui| {
                         ui.label(
-                            RichText::new(format!("🔄 Study Cycle #{}", self.cycle.cycle_number))
+                            RichText::new(format!("{} Study Cycle #{}", TAB_CYCLE, self.cycle.cycle_number))
                                 .size(20.0)
                                 .strong()
                                 .color(Color32::WHITE),
                         );
                         ui.label(
-                            RichText::new("A dynamic rotation study framework. Progress updates automatically as you focus.")
-                                .size(12.0)
+                            RichText::new("Dynamic rotation study framework. Progress updates automatically as you focus.")
+                                .size(13.0)
                                 .color(palette.text_secondary),
                         );
                     });
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        let complete_btn = egui::Button::new(RichText::new("✓ Complete Cycle").strong().color(Color32::WHITE))
+                        let complete_btn = egui::Button::new(RichText::new(format!("{} Complete Cycle", CHECK)).strong().color(Color32::WHITE))
                             .fill(palette.accent_primary)
                             .corner_radius(CornerRadius::same(8));
 
@@ -410,18 +412,18 @@ impl FernDoroApp {
 
                 frame.show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        // Color pill
+                        // Color indicator
                         let fill_c = parse_hex_color(&subject.color_hex).unwrap_or(palette.accent_secondary);
-                        ui.label(RichText::new("■").size(18.0).color(fill_c));
+                        ui.label(RichText::new("●").size(16.0).color(fill_c));
 
                         ui.vertical(|ui| {
                             ui.horizontal(|ui| {
                                 ui.label(RichText::new(&subject.name).size(15.0).strong().color(Color32::WHITE));
                                 if is_active {
-                                    status_pill(ui, "🟢 Active Focus", palette.accent_dark, Color32::WHITE);
+                                    status_pill(ui, &format!("{} Active Focus", TARGET), palette.accent_dark, Color32::WHITE);
                                 }
                                 if subject.is_completed() {
-                                    status_pill(ui, "✓ Done", palette.success.linear_multiply(0.2), palette.success);
+                                    status_pill(ui, &format!("{} Done", CHECK), palette.success.linear_multiply(0.2), palette.success);
                                 }
                             });
 
@@ -434,15 +436,15 @@ impl FernDoroApp {
                             );
                         });
 
-                        // Action buttons right-aligned
+                        // Action buttons right-aligned with crisp glyphs
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            if ui.button(RichText::new("🗑").size(12.0).color(palette.text_muted)).clicked() {
+                            if ui.button(RichText::new(TRASH).size(13.0).color(palette.text_muted)).clicked() {
                                 to_delete = Some(idx);
                             }
-                            if ui.button("▼").clicked() {
+                            if ui.button(RichText::new(CHEVRON_DOWN).size(13.0)).clicked() {
                                 to_move_down = Some(idx);
                             }
-                            if ui.button("▲").clicked() {
+                            if ui.button(RichText::new(CHEVRON_UP).size(13.0)).clicked() {
                                 to_move_up = Some(idx);
                             }
                             if ui.button("+15m").clicked() {
@@ -515,21 +517,21 @@ impl FernDoroApp {
 
     fn render_frequency_tab(&mut self, ui: &mut Ui, palette: &ThemePalette) {
         ScrollArea::vertical().show(ui, |ui| {
-            // Stats Row
+            // Stats Row with crisp glyphs
             ui.horizontal(|ui| {
                 let streak = self.frequency.current_streak_days();
-                stat_card(ui, palette, "🔥", "Current Streak", &format!("{} Days", streak), Some("consecutive study days"));
+                stat_card(ui, palette, FLAME, "Current Streak", &format!("{} Days", streak), Some("consecutive study days"));
 
                 let best = self.frequency.best_streak_days();
-                stat_card(ui, palette, "🏅", "Best Streak", &format!("{} Days", best), Some("all-time record"));
+                stat_card(ui, palette, TROPHY, "Best Streak", &format!("{} Days", best), Some("all-time record"));
 
                 let total_mins = self.frequency.total_minutes_all_time();
                 let hours = total_mins / 60;
                 let mins = total_mins % 60;
-                stat_card(ui, palette, "⏳", "Total Study Time", &format!("{}h {}m", hours, mins), Some("across all sessions"));
+                stat_card(ui, palette, CLOCK, "Total Study Time", &format!("{}h {}m", hours, mins), Some("across all sessions"));
 
                 let active_days = self.frequency.total_active_days();
-                stat_card(ui, palette, "📅", "Active Days", &format!("{} Days", active_days), Some("days with logged work"));
+                stat_card(ui, palette, CALENDAR, "Active Days", &format!("{} Days", active_days), Some("days with logged work"));
             });
 
             ui.add_space(18.0);
@@ -539,7 +541,7 @@ impl FernDoroApp {
                 ui.horizontal(|ui| {
                     ui.label(RichText::new("Consistency Matrix (Past 20 Weeks)").size(15.0).strong().color(Color32::WHITE));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        ui.label(RichText::new("■ High  ■ Med  ■ Low  □ None").size(10.0).color(palette.text_muted));
+                        ui.label(RichText::new("■ High  ■ Med  ■ Low  □ None").size(11.0).color(palette.text_muted));
                     });
                 });
                 ui.add_space(8.0);
@@ -590,7 +592,7 @@ impl FernDoroApp {
             // Daily Habits & Attendance Checklist
             card_frame(palette).show(ui, |ui| {
                 ui.label(RichText::new("Daily Habits & Attendance Checklist").size(15.0).strong().color(Color32::WHITE));
-                ui.label(RichText::new("Tick off essential study and wellness habits for today:").size(12.0).color(palette.text_secondary));
+                ui.label(RichText::new("Tick off essential study and wellness habits for today:").size(12.5).color(palette.text_secondary));
                 ui.add_space(8.0);
 
                 let today_log = self.frequency.today_log();
@@ -601,7 +603,7 @@ impl FernDoroApp {
                     ui.horizontal(|ui| {
                         let text = format!("{}  {}", habit.icon, habit.name);
                         let mut checked = is_checked;
-                        if ui.checkbox(&mut checked, RichText::new(text).color(if is_checked { palette.accent_secondary } else { palette.text_primary })).changed() {
+                        if ui.checkbox(&mut checked, RichText::new(text).size(13.5).color(if is_checked { palette.accent_secondary } else { palette.text_primary })).changed() {
                             toggled = Some(habit.name.clone());
                         }
                     });
@@ -620,8 +622,8 @@ impl FernDoroApp {
         ScrollArea::vertical().show(ui, |ui| {
             // Theme Section
             card_frame(palette).show(ui, |ui| {
-                ui.label(RichText::new("🎨 Visual Themes (Purple Dark Architecture)").size(16.0).strong().color(Color32::WHITE));
-                ui.label(RichText::new("Select from high-contrast dark purple themes. FernDoro uses an extensible palette structure.").size(12.0).color(palette.text_secondary));
+                ui.label(RichText::new(format!("{} Visual Themes (Purple Dark Architecture)", PALETTE)).size(16.0).strong().color(Color32::WHITE));
+                ui.label(RichText::new("Select from high-contrast dark purple themes. FernDoro uses an extensible palette structure.").size(12.5).color(palette.text_secondary));
                 ui.add_space(10.0);
 
                 for mode in ThemeMode::all() {
@@ -646,7 +648,7 @@ impl FernDoroApp {
 
             // Pomodoro Timing Preferences
             card_frame(palette).show(ui, |ui| {
-                ui.label(RichText::new("⏱ Pomodoro Preferences").size(16.0).strong().color(Color32::WHITE));
+                ui.label(RichText::new(format!("{} Pomodoro Preferences", TAB_POMODORO)).size(16.0).strong().color(Color32::WHITE));
                 ui.add_space(10.0);
 
                 ui.horizontal(|ui| {
@@ -691,7 +693,7 @@ impl FernDoroApp {
 
             // Frequency Goals Preferences
             card_frame(palette).show(ui, |ui| {
-                ui.label(RichText::new("📊 Daily Goal Preferences").size(16.0).strong().color(Color32::WHITE));
+                ui.label(RichText::new(format!("{} Daily Goal Preferences", TAB_FREQUENCY)).size(16.0).strong().color(Color32::WHITE));
                 ui.add_space(10.0);
 
                 ui.horizontal(|ui| {
@@ -706,8 +708,8 @@ impl FernDoroApp {
 
             // About FernDoro
             card_frame(palette).show(ui, |ui| {
-                ui.label(RichText::new("About FernDoro").size(15.0).strong().color(palette.accent_glow));
-                ui.label(RichText::new("Version 0.1.0 • Built with Rust and egui").size(12.0).color(palette.text_secondary));
+                ui.label(RichText::new(format!("{} About FernDoro", LOGO_LEAF)).size(15.0).strong().color(palette.accent_glow));
+                ui.label(RichText::new("Version 0.1.1 • Built with Rust and egui • Powered by Inter & JetBrains Mono").size(12.5).color(palette.text_secondary));
                 ui.label(RichText::new("Designed for focused mastery, systematic study rotation, and daily habit consistency.").size(12.0).color(palette.text_muted));
             });
         });

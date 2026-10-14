@@ -1,6 +1,8 @@
 mod app;
 mod cycle;
+mod fonts;
 mod frequency;
+mod icons;
 mod notification;
 mod pomodoro;
 mod storage;
@@ -21,6 +23,9 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "FernDoro",
         native_options,
-        Box::new(|cc| Ok(Box::new(FernDoroApp::new(cc)))),
+        Box::new(|cc| {
+            fonts::setup_fonts(&cc.egui_ctx);
+            Ok(Box::new(FernDoroApp::new(cc)))
+        }),
     )
 }

@@ -65,22 +65,22 @@ impl Default for FrequencyTrackerState {
                 HabitItem {
                     id: "h1".into(),
                     name: "Deep Work Block".into(),
-                    icon: "🔥".into(),
+                    icon: crate::icons::BRAIN.into(),
                 },
                 HabitItem {
                     id: "h2".into(),
                     name: "Problem Solving / Coding".into(),
-                    icon: "💻".into(),
+                    icon: crate::icons::CODE.into(),
                 },
                 HabitItem {
                     id: "h3".into(),
                     name: "Review Notes & Flashcards".into(),
-                    icon: "📚".into(),
+                    icon: crate::icons::BOOK.into(),
                 },
                 HabitItem {
                     id: "h4".into(),
                     name: "Physical Stretch & Hydration".into(),
-                    icon: "💧".into(),
+                    icon: crate::icons::WATER.into(),
                 },
             ],
         }
