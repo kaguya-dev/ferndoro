@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=FernDoro
+Comment=High-contrast dark purple study companion: Pomodoro, Study Cycles & Frequency Tracker
+Exec=/home/enzor/.local/bin/ferndoro
+Icon=ferndoro
+Terminal=false
+Type=Application
+Categories=Utility;Education;Office;Development;
+Keywords=pomodoro;timer;study;cycle;tracker;habits;focus;
+StartupNotify=true
