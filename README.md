@@ -18,13 +18,18 @@ FernDoro combines three core study methodologies into an integrated native deskt
 - **Quick Presets**: One-click switching between `25/5 Classic`, `50/10 Deep Work`, and `90/20 Ultradian` rhythms.
 - **Desktop Alerts**: Native Linux notifications (`notify-send`) and bell alerts when intervals complete.
 
-### 🔄 2. Study Cycle Planner
+### 🔄 2. Study Cycle Planner & Preset Builder
 - **Rotation-Based Learning**: Avoid burnout by rotating through subjects based on weight and target duration rather than rigid times of day.
-- **Subject Queue Management**: Add, edit, reorder, and color-code subjects (e.g. Systems Programming, Algorithms, Mathematics).
+- **Undergrad Preset Builder**: One-click university semester templates (Computer Science, STEM Heavy, Balanced 4x45m, Finals Sprint) plus custom preset saving.
+- **Upgraded Time Setters**: Quick duration chips (`25m`, `45m`, `60m`, `90m`), delta adjusters (`-15m`, `+15m`), and formatted human-readable durations (`1h 30m`).
 - **Progress Tracking**: Individual subject progress bars plus an overall cycle completion gauge.
-- **Cycle Rollover**: Automatically or manually advance through cycles (Cycle #1, Cycle #2, ...) while retaining all historical statistics.
 
-### 📊 3. Frequency & Habit Tracker
+### 📝 3. Test Mode (Exams & Auto-Cycle Booster)
+- **Exam Countdown**: Track upcoming university exams with days remaining, difficulty (1-5), and importance weights.
+- **Automatic Points Injection**: Dynamically calculates urgency (Critical, High, Medium) and auto-boosts required study minutes in your Study Cycle.
+- **Auto-Balance**: Rebalance entire semester rotation queue with a single click.
+
+### 📊 4. Frequency & Habit Tracker
 - **GitHub-Style Consistency Heatmap**: 20+ week visual matrix showcasing study frequency and intensity tiers with interactive tooltips.
 - **Streak Counter**: Real-time current streak and all-time best streak tracking.
 - **Daily Target Progress**: Visual progression bar tracking progress toward daily study goals.
@@ -44,7 +49,7 @@ FernDoro combines three core study methodologies into an integrated native deskt
 
 ### Build and Run from Source
 ```bash
-git clone https://github.com/yourusername/ferndoro.git
+git clone https://github.com/kaguya-dev/ferndoro.git
 cd ferndoro
 cargo run --release
 ```
