@@ -27,3 +27,10 @@ pub const WATER: &str = "\u{f0590}";          // Droplet / Water
 pub const BRAIN: &str = "\u{f06c1}";          // Brain / Deep work
 pub const SPARKLE: &str = "\u{f0e2d}";        // Sparkle / Toast
 pub const PALETTE: &str = "\u{f03d2}";        // Palette / Theme
+
+// Undergrad & Test Mode additions
+pub const GRADUATION_CAP: &str = "\u{f019d}"; // Undergrad / Student
+pub const TEST_PENCIL: &str = "\u{f042d}";    // Exam / Test Mode
+pub const PRESET_LIST: &str = "\u{f0219}";    // Preset Builder / Templates
+pub const CALENDAR_ALERT: &str = "\u{f05a9}"; // Upcoming Exam Alert
+pub const BOLT: &str = "\u{f0469}";           // Auto-balance boost

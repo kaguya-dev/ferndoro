@@ -6,6 +6,7 @@ use crate::theme::ThemeMode;
 use crate::pomodoro::PomodoroState;
 use crate::cycle::StudyCycleState;
 use crate::frequency::FrequencyTrackerState;
+use crate::exam::ExamState;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppData {
@@ -13,6 +14,8 @@ pub struct AppData {
     pub pomodoro: PomodoroState,
     pub cycle: StudyCycleState,
     pub frequency: FrequencyTrackerState,
+    #[serde(default)]
+    pub exams: ExamState,
 }
 
 impl Default for AppData {
@@ -22,6 +25,7 @@ impl Default for AppData {
             pomodoro: PomodoroState::default(),
             cycle: StudyCycleState::default(),
             frequency: FrequencyTrackerState::default(),
+            exams: ExamState::default(),
         }
     }
 }
