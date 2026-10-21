@@ -46,3 +46,9 @@ pub const SKULL: &str = "\u{f04b2}";          // Curses / Boss / Danger
 pub const VAULT: &str = "\u{f0b83}";          // Vault / Chest
 #[allow(dead_code)]
 pub const HOURGLASS: &str = "\u{f05ca}";      // Temporal Flux / Time
+#[allow(dead_code)]
+pub const USER_HERO: &str = "\u{f0007}";      // Character / User / Person
+#[allow(dead_code)]
+pub const CROWN_HERO: &str = "\u{f0775}";     // Crown / Scholar
+#[allow(dead_code)]
+pub const WAND_HERO: &str = "\u{f0cd2}";      // Magic / Arcane

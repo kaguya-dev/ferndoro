@@ -119,6 +119,149 @@ pub enum RoguePhase {
     BreakRest,      // Calm pure rest state
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CharacterClass {
+    Chronomancer,
+    BattleScholar,
+    RuneAlchemist,
+    ShadowScribe,
+}
+
+impl Default for CharacterClass {
+    fn default() -> Self {
+        Self::Chronomancer
+    }
+}
+
+impl CharacterClass {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Chronomancer => "The Chronomancer",
+            Self::BattleScholar => "The Battle Scholar",
+            Self::RuneAlchemist => "The Rune Alchemist",
+            Self::ShadowScribe => "The Shadow Scribe",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::Chronomancer => "⏳",
+            Self::BattleScholar => "⚔️",
+            Self::RuneAlchemist => "🔮",
+            Self::ShadowScribe => "📜",
+        }
+    }
+
+    pub fn role_title(&self) -> &'static str {
+        match self {
+            Self::Chronomancer => "Master of Time & Flux",
+            Self::BattleScholar => "High-Stakes Disciplinarian",
+            Self::RuneAlchemist => "Transmuter of Knowledge & Fate",
+            Self::ShadowScribe => "Silent Discipline Specialist",
+        }
+    }
+
+    pub fn perk_description(&self) -> &'static str {
+        match self {
+            Self::Chronomancer => "+5s bonus grace window on focus break; +10% temporal XP.",
+            Self::BattleScholar => "Starts runs with +1 Soul Shield on Floor 1; +20% Gold on Boss fights.",
+            Self::RuneAlchemist => "+15% higher chance for Boon Fate cards; +25% XP from all completed floors.",
+            Self::ShadowScribe => "+15 bonus Gold per completed floor; daily streak bonus doubled.",
+        }
+    }
+
+    pub fn all() -> &'static [CharacterClass] {
+        &[
+            Self::Chronomancer,
+            Self::BattleScholar,
+            Self::RuneAlchemist,
+            Self::ShadowScribe,
+        ]
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct RelicInfo {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub desc: &'static str,
+    pub cost: u32,
+    pub icon: &'static str,
+}
+
+pub const ALL_RELICS: &[RelicInfo] = &[
+    RelicInfo {
+        id: "loaded_dice",
+        name: "Loaded Dice",
+        desc: "Shifts fate card draw odds +15% towards Boons",
+        cost: 150,
+        icon: "🎲",
+    },
+    RelicInfo {
+        id: "merchants_coin",
+        name: "Merchant's Coin",
+        desc: "+20% bonus Gold on all cleared floors",
+        cost: 200,
+        icon: "🪙",
+    },
+    RelicInfo {
+        id: "hourglass_of_mercy",
+        name: "Hourglass of Mercy",
+        desc: "+5s extra grace period on window unfocus (15s total)",
+        cost: 250,
+        icon: "⏳",
+    },
+    RelicInfo {
+        id: "aegis_of_will",
+        name: "Aegis of Will",
+        desc: "Start every dungeon run with +1 Soul Shield",
+        cost: 300,
+        icon: "🛡️",
+    },
+    RelicInfo {
+        id: "crown_of_wisdom",
+        name: "Crown of Wisdom",
+        desc: "Grants +35% bonus XP from all dungeon encounters",
+        cost: 320,
+        icon: "👑",
+    },
+    RelicInfo {
+        id: "phoenix_feather",
+        name: "Phoenix Feather",
+        desc: "Once per run: if you bust, preserves unbanked gold to Vault",
+        cost: 400,
+        icon: "🪶",
+    },
+    RelicInfo {
+        id: "ring_of_clarity",
+        name: "Ring of Clarity",
+        desc: "Adds +5 bonus Gold for each floor cleared in active run",
+        cost: 220,
+        icon: "💍",
+    },
+    RelicInfo {
+        id: "elixir_of_haste",
+        name: "Elixir of Haste",
+        desc: "Halves sanctuary rest duration and awards +25 XP",
+        cost: 180,
+        icon: "🧪",
+    },
+    RelicInfo {
+        id: "tome_of_revelation",
+        name: "Tome of Mystic Sight",
+        desc: "Pre-reveals mystery cards in Floor Dealer break casino",
+        cost: 260,
+        icon: "📖",
+    },
+    RelicInfo {
+        id: "cursed_chalice",
+        name: "Cursed Chalice of Midas",
+        desc: "Increases all Gold payouts by +50%",
+        cost: 450,
+        icon: "🏆",
+    },
+];
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CurrentRun {
     pub floor_number: u32,
@@ -131,6 +274,9 @@ pub struct CurrentRun {
     pub selected_ante: AnteTier,
     pub selected_task: String,
     pub is_boss_floor: bool,
+
+    #[serde(default)]
+    pub sessions_in_run: u32,
 }
 
 impl Default for CurrentRun {
@@ -144,8 +290,9 @@ impl Default for CurrentRun {
             pauses_used: 0,
             floor_duration_mins: 25,
             selected_ante: AnteTier::SafeBet1x,
-            selected_task: "Floor 1: Deep Analytical Work".to_string(),
+            selected_task: "Floor 1 • Session #1 (Standard Focus Encounter)".to_string(),
             is_boss_floor: false,
+            sessions_in_run: 0,
         }
     }
 }
@@ -160,6 +307,12 @@ pub struct UserVault {
     pub total_runs_cashed: u32,
     pub unlocked_relics: HashSet<String>,
     pub equipped_title: String,
+
+    #[serde(default)]
+    pub selected_class: CharacterClass,
+
+    #[serde(default)]
+    pub total_sessions_completed: u32,
 }
 
 impl Default for UserVault {
@@ -173,6 +326,8 @@ impl Default for UserVault {
             total_runs_cashed: 0,
             unlocked_relics: HashSet::new(),
             equipped_title: "Novice Scribe".to_string(),
+            selected_class: CharacterClass::Chronomancer,
+            total_sessions_completed: 0,
         }
     }
 }
@@ -256,11 +411,34 @@ impl Default for RogueDungeonState {
 
 impl RogueDungeonState {
     pub fn max_grace_period(&self) -> f32 {
+        let mut grace = 10.0;
         if self.vault.unlocked_relics.contains("hourglass_of_mercy") {
-            15.0
-        } else {
-            10.0
+            grace += 5.0;
         }
+        if self.vault.selected_class == CharacterClass::Chronomancer {
+            grace += 5.0;
+        }
+        grace
+    }
+
+    pub fn auto_encounter_title(&self, active_course: Option<&str>) -> String {
+        let session_num = self.vault.total_sessions_completed + 1;
+        let floor = self.current_run.floor_number;
+
+        let tier_name = match self.current_run.selected_ante {
+            AnteTier::SafeBet1x => "Standard Focus Encounter",
+            AnteTier::DoubleDown2x => "High-Stakes Trial",
+            AnteTier::AllInBoss3x => "Guardian Boss Raid",
+            AnteTier::AllInBoss5x => "Nightmare Overlord Battle",
+        };
+
+        if let Some(course) = active_course {
+            if !course.trim().is_empty() {
+                return format!("Floor {} • Session #{} ({} • {})", floor, session_num, course, tier_name);
+            }
+        }
+
+        format!("Floor {} • Session #{} ({})", floor, session_num, tier_name)
     }
 
     pub fn calculate_floor_payout(&self) -> u32 {
@@ -277,26 +455,64 @@ impl RogueDungeonState {
             mod_mult *= 3.0;
         }
 
-        let relic_mult = if self.vault.unlocked_relics.contains("merchants_coin") { 1.2 } else { 1.0 };
+        let mut relic_mult = 1.0_f32;
+        if self.vault.unlocked_relics.contains("merchants_coin") {
+            relic_mult += 0.20;
+        }
+        if self.vault.unlocked_relics.contains("cursed_chalice") {
+            relic_mult += 0.50;
+        }
+        if self.vault.selected_class == CharacterClass::BattleScholar && self.current_run.selected_ante != AnteTier::SafeBet1x {
+            relic_mult += 0.20;
+        }
 
-        (base_gold as f32 * ante_mult * run_mult * mod_mult * relic_mult).round() as u32
+        let streak_bonus = if self.vault.unlocked_relics.contains("ring_of_clarity") {
+            self.current_run.sessions_in_run * 5
+        } else {
+            0
+        };
+
+        let class_flat = if self.vault.selected_class == CharacterClass::ShadowScribe { 15 } else { 0 };
+
+        (base_gold as f32 * ante_mult * run_mult * mod_mult * relic_mult).round() as u32 + streak_bonus + class_flat
     }
 
     pub fn calculate_floor_xp(&self) -> u32 {
         let base_xp = self.current_run.floor_duration_mins * 2;
         let ante_mult = self.current_run.selected_ante.multiplier();
-        (base_xp as f32 * ante_mult).round() as u32
+
+        let mut xp_mult = 1.0_f32;
+        if self.vault.unlocked_relics.contains("crown_of_wisdom") {
+            xp_mult += 0.35;
+        }
+        if self.vault.selected_class == CharacterClass::RuneAlchemist {
+            xp_mult += 0.25;
+        }
+        if self.vault.selected_class == CharacterClass::Chronomancer {
+            xp_mult += 0.10;
+        }
+
+        (base_xp as f32 * ante_mult * xp_mult).round() as u32
     }
 
-    pub fn start_encounter(&mut self) {
+    pub fn start_encounter(&mut self, task_name: &str) {
+        self.current_run.selected_task = task_name.to_string();
+
         if self.current_run.active_modifier == FateModifier::DoubleOrNothing {
             if self.current_run.selected_ante == AnteTier::SafeBet1x {
                 self.current_run.selected_ante = AnteTier::DoubleDown2x;
             }
         }
 
-        if self.current_run.floor_number == 1 && self.vault.unlocked_relics.contains("aegis_of_will") && self.current_run.soul_shields == 0 {
-            self.current_run.soul_shields = 1;
+        if self.current_run.floor_number == 1 && self.current_run.soul_shields == 0 {
+            let mut shields = 0;
+            if self.vault.unlocked_relics.contains("aegis_of_will") {
+                shields += 1;
+            }
+            if self.vault.selected_class == CharacterClass::BattleScholar {
+                shields += 1;
+            }
+            self.current_run.soul_shields = shields;
         }
 
         self.current_run.pauses_used = 0;
@@ -377,15 +593,25 @@ impl RogueDungeonState {
     }
 
     pub fn trigger_bust(&mut self) {
+        if self.vault.unlocked_relics.contains("phoenix_feather") && self.current_run.unbanked_gold > 0 {
+            let saved = self.current_run.unbanked_gold;
+            self.vault.vault_gold += saved;
+            self.current_run.unbanked_gold = 0;
+            Notifier::notify(
+                "🪶 Phoenix Feather Saved You!",
+                &format!("The Phoenix Feather preserved your {} Gold and safely deposited it to Vault!", saved),
+            );
+        } else {
+            self.current_run.unbanked_gold = 0;
+            Notifier::notify(
+                "☠️ DUNGEON BUST!",
+                "You lost focus in a high-stakes encounter! Your unbanked pot has been lost to the void.",
+            );
+        }
+
         self.phase = RoguePhase::FocusFailed;
-        self.current_run.unbanked_gold = 0;
         self.current_run.current_multiplier = 1.0;
         self.is_grace_active = false;
-
-        Notifier::notify(
-            "☠️ DUNGEON BUST!",
-            "You lost focus in a high-stakes encounter! Your unbanked pot has been lost to the void.",
-        );
     }
 
     pub fn complete_floor(&mut self) -> FloorCompletedEvent {
@@ -394,6 +620,8 @@ impl RogueDungeonState {
 
         self.current_run.unbanked_gold += earned_gold;
         self.vault.total_dungeon_minutes += self.current_run.floor_duration_mins;
+        self.vault.total_sessions_completed += 1;
+        self.current_run.sessions_in_run += 1;
 
         let leveled_up = self.vault.add_xp(earned_xp);
 
@@ -405,7 +633,12 @@ impl RogueDungeonState {
         self.current_run.active_modifier = FateModifier::None;
 
         let break_mins = if self.current_run.is_boss_floor { 10 } else { 5 };
-        self.remaining_break_seconds = (break_mins * 60) as f32;
+        let mut final_break_secs = (break_mins * 60) as f32;
+        if self.vault.unlocked_relics.contains("elixir_of_haste") {
+            final_break_secs *= 0.5;
+            self.vault.add_xp(25);
+        }
+        self.remaining_break_seconds = final_break_secs;
 
         self.populate_dealer_cards();
         self.card_drawn = None;
@@ -432,6 +665,7 @@ impl RogueDungeonState {
         let seed = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_micros();
 
         let has_loaded_dice = self.vault.unlocked_relics.contains("loaded_dice");
+        let is_rune_alchemist = self.vault.selected_class == CharacterClass::RuneAlchemist;
         
         let boons = [
             FateModifier::TemporalFlux,
@@ -448,7 +682,14 @@ impl RogueDungeonState {
         let mut cards = Vec::with_capacity(3);
         for i in 0..3 {
             let roll = ((seed + i * 7919) % 100) as u32;
-            let boon_threshold = if has_loaded_dice { 70 } else { 55 };
+            let mut boon_threshold = 55;
+            if has_loaded_dice {
+                boon_threshold += 15;
+            }
+            if is_rune_alchemist {
+                boon_threshold += 15;
+            }
+
             if roll < boon_threshold {
                 let idx = ((seed / (i + 1) as u128) % boons.len() as u128) as usize;
                 cards.push(boons[idx]);

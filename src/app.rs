@@ -7,7 +7,7 @@ use crate::exam::{ExamState, ExamTest};
 use crate::frequency::FrequencyTrackerState;
 use crate::icons::*;
 use crate::pomodoro::{PomodoroPhase, PomodoroState, TimerStatus};
-use crate::rogue::{AnteTier, FateModifier, RogueDungeonState, RoguePhase};
+use crate::rogue::{AnteTier, CharacterClass, FateModifier, RogueDungeonState, RoguePhase, ALL_RELICS};
 use crate::storage::{AppData, Storage};
 use crate::theme::{ThemeMode, ThemePalette};
 use crate::widgets::{
@@ -52,8 +52,9 @@ pub struct FernDoroApp {
     pub new_exam_weight: u32,
     pub new_exam_diff: u32,
 
-    // UI state for rogue shop drawer
+    // UI state for rogue shop drawer & character sheet
     pub show_relic_shop: bool,
+    pub show_character_sheet: bool,
 
     // Notification toast / message
     pub toast_message: Option<(String, Instant)>,
@@ -85,6 +86,7 @@ impl FernDoroApp {
             new_exam_weight: 4,
             new_exam_diff: 4,
             show_relic_shop: false,
+            show_character_sheet: false,
             toast_message: None,
         };
 
@@ -270,13 +272,14 @@ impl FernDoroApp {
 
                 ui.add_space(12.0);
 
-                // Level & XP Pill
+                // Character Hero Class & Level Pill
                 let lvl = self.rogue.vault.level;
                 let xp = self.rogue.vault.current_xp;
                 let thresh = self.rogue.vault.xp_threshold();
+                let class_icon = self.rogue.vault.selected_class.icon();
                 status_pill(
                     ui,
-                    &format!("⭐ Lv.{} ({}/{} XP)", lvl, xp, thresh),
+                    &format!("{} Lv.{} ({}/{} XP)", class_icon, lvl, xp, thresh),
                     palette.bg_card,
                     palette.accent_primary,
                 );
@@ -1086,9 +1089,22 @@ impl FernDoroApp {
 
             ui.add_space(16.0);
 
-            // SECTOR 2: RELIC SHOP & PERMANENT PROGRESSION (EXPANDABLE)
+            // SECTOR 2: HERO CHARACTER SHEET & EXPANDED RELIC ARMORY
             ui.horizontal(|ui| {
-                let shop_label = if self.show_relic_shop { "Hide Relic Armory" } else { "Open Relic Armory & Artifacts" };
+                let char_label = if self.show_character_sheet { "Hide Scholar Profile" } else { "View Scholar Profile" };
+                let char_btn = egui::Button::new(RichText::new(format!("{}  {}", self.rogue.vault.selected_class.icon(), char_label)).size(13.0).color(palette.text_primary))
+                    .fill(palette.bg_card)
+                    .stroke(egui::Stroke::new(1.0_f32, palette.bg_card_border))
+                    .min_size(Vec2::new(0.0, 34.0))
+                    .corner_radius(CornerRadius::same(16));
+
+                if ui.add(char_btn).clicked() {
+                    self.show_character_sheet = !self.show_character_sheet;
+                }
+
+                ui.add_space(10.0);
+
+                let shop_label = if self.show_relic_shop { "Hide Relic Armory" } else { "Relic Armory (10 Items)" };
                 let shop_btn = egui::Button::new(RichText::new(format!("{}  {}", VAULT, shop_label)).size(13.0).color(palette.text_primary))
                     .fill(palette.bg_card)
                     .stroke(egui::Stroke::new(1.0_f32, palette.bg_card_border))
@@ -1102,49 +1118,136 @@ impl FernDoroApp {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     status_pill(
                         ui,
-                        &format!("👑 Player Rank: {}", self.rogue.vault.equipped_title),
+                        &format!("👑 {} • {}", self.rogue.vault.selected_class.name(), self.rogue.vault.equipped_title),
                         palette.accent_container.linear_multiply(0.4),
                         palette.accent_primary,
                     );
                 });
             });
 
+            if self.show_character_sheet {
+                ui.add_space(12.0);
+                elevated_card_frame(palette).show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new(self.rogue.vault.selected_class.icon()).size(30.0));
+                        ui.add_space(10.0);
+                        ui.vertical(|ui| {
+                            ui.label(RichText::new(format!("Scholar Hero: {}", self.rogue.vault.selected_class.name())).size(16.0).strong().color(palette.accent_primary));
+                            ui.label(RichText::new(self.rogue.vault.selected_class.role_title()).size(12.0).color(palette.text_secondary));
+                        });
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            status_pill(
+                                ui,
+                                &format!("⚡ Level {} ({}/{} XP)", self.rogue.vault.level, self.rogue.vault.current_xp, self.rogue.vault.xp_threshold()),
+                                palette.accent_container,
+                                palette.on_accent_container,
+                            );
+                        });
+                    });
+
+                    ui.add_space(10.0);
+                    ui.label(RichText::new("Choose Your Scholar Discipline / Archetype:").size(12.5).strong().color(palette.text_primary));
+                    ui.add_space(6.0);
+
+                    ui.horizontal(|ui| {
+                        for class in CharacterClass::all() {
+                            let is_selected = self.rogue.vault.selected_class == *class;
+                            let btn_bg = if is_selected { palette.accent_container } else { palette.bg_card };
+                            let btn_fg = if is_selected { palette.on_accent_container } else { palette.text_secondary };
+                            let stroke = if is_selected { egui::Stroke::new(1.5_f32, palette.accent_primary) } else { egui::Stroke::new(1.0_f32, palette.bg_card_border) };
+
+                            let btn = egui::Button::new(RichText::new(format!("{} {}", class.icon(), class.name())).strong().size(12.0).color(btn_fg))
+                                .fill(btn_bg)
+                                .stroke(stroke)
+                                .corner_radius(CornerRadius::same(14))
+                                .min_size(Vec2::new(0.0, 32.0));
+
+                            if ui.add(btn).clicked() {
+                                self.rogue.vault.selected_class = *class;
+                                self.save_state();
+                                self.set_toast(&format!("Switched discipline to {}!", class.name()));
+                            }
+                            ui.add_space(8.0);
+                        }
+                    });
+
+                    ui.add_space(10.0);
+                    // Active Perk Box
+                    let perk_frame = egui::Frame::new()
+                        .fill(palette.bg_deep)
+                        .stroke(egui::Stroke::new(1.0_f32, palette.bg_card_border))
+                        .corner_radius(CornerRadius::same(12))
+                        .inner_margin(Margin::symmetric(14, 10));
+
+                    perk_frame.show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(RichText::new("✨ Active Class Trait:").strong().size(12.0).color(palette.accent_tertiary));
+                            ui.add_space(8.0);
+                            ui.label(RichText::new(self.rogue.vault.selected_class.perk_description()).size(12.0).color(palette.text_primary));
+                        });
+                    });
+
+                    ui.add_space(10.0);
+                    // Career Stats row
+                    ui.horizontal(|ui| {
+                        let total_mins = self.rogue.vault.total_dungeon_minutes;
+                        let hours = total_mins / 60;
+                        let mins = total_mins % 60;
+
+                        status_pill(ui, &format!("🎯 {} Sessions Conquered", self.rogue.vault.total_sessions_completed), palette.bg_card, palette.accent_primary);
+                        ui.add_space(10.0);
+                        status_pill(ui, &format!("⏳ {}h {}m Total Focus", hours, mins), palette.bg_card, palette.accent_secondary);
+                        ui.add_space(10.0);
+                        status_pill(ui, &format!("🏆 Highest: Floor {}", self.rogue.vault.highest_floor), palette.bg_card, palette.accent_tertiary);
+                        ui.add_space(10.0);
+                        status_pill(ui, &format!("🎒 Relics: {}/10", self.rogue.vault.unlocked_relics.len()), palette.bg_card, palette.text_primary);
+                    });
+                });
+            }
+
             if self.show_relic_shop {
                 ui.add_space(12.0);
                 elevated_card_frame(palette).show(ui, |ui| {
-                    ui.label(RichText::new(format!("{} The Dungeon Relic Armory", VAULT)).size(15.5).strong().color(palette.accent_tertiary));
-                    ui.label(RichText::new("Invest Vault Gold into permanent passive relics to survive higher floors:").size(12.0).color(palette.text_secondary));
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new(format!("{} The Dungeon Relic Armory (10 Arcane Artifacts)", VAULT)).size(15.5).strong().color(palette.accent_tertiary));
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            ui.label(RichText::new(format!("Available Vault Gold: {}g", self.rogue.vault.vault_gold)).size(12.5).strong().color(palette.accent_tertiary));
+                        });
+                    });
+                    ui.label(RichText::new("Invest Vault Gold into permanent passive relics to survive higher floors and maximize returns:").size(12.0).color(palette.text_secondary));
                     ui.add_space(10.0);
 
-                    let relics = [
-                        ("loaded_dice", "Loaded Dice", "Shifts fate card draw odds +15% towards Boons", 150),
-                        ("merchants_coin", "Merchant's Coin", "+20% bonus Gold on all cleared floors", 200),
-                        ("hourglass_of_mercy", "Hourglass of Mercy", "+5s extra grace period on window unfocus (15s total)", 250),
-                        ("aegis_of_will", "Aegis of Will", "Start every dungeon run with +1 Soul Shield", 300),
-                    ];
-
-                    for (id, name, desc, cost) in relics {
-                        let owned = self.rogue.vault.unlocked_relics.contains(id);
+                    for relic in ALL_RELICS {
+                        let owned = self.rogue.vault.unlocked_relics.contains(relic.id);
                         ui.horizontal(|ui| {
+                            ui.label(RichText::new(relic.icon).size(18.0));
+                            ui.add_space(6.0);
+
                             if owned {
                                 status_pill(ui, "✓ Equipped", palette.success.linear_multiply(0.2), palette.success);
                             } else {
-                                let can_afford = self.rogue.vault.vault_gold >= cost;
-                                let btn = egui::Button::new(RichText::new(format!("Buy: {}g", cost)).color(if can_afford { palette.bg_deep } else { palette.text_muted }))
-                                    .fill(if can_afford { palette.accent_primary } else { palette.bg_deep })
-                                    .corner_radius(CornerRadius::same(12));
+                                let can_afford = self.rogue.vault.vault_gold >= relic.cost;
+                                let btn = egui::Button::new(
+                                    RichText::new(format!("Buy: {}g", relic.cost))
+                                        .strong()
+                                        .size(11.5)
+                                        .color(if can_afford { palette.bg_deep } else { palette.text_muted })
+                                )
+                                .fill(if can_afford { palette.accent_primary } else { palette.bg_deep })
+                                .corner_radius(CornerRadius::same(12))
+                                .min_size(Vec2::new(76.0, 26.0));
 
                                 if ui.add_enabled(can_afford, btn).clicked() {
-                                    if self.rogue.buy_relic(id, cost) {
+                                    if self.rogue.buy_relic(relic.id, relic.cost) {
                                         self.save_state();
-                                        self.set_toast(&format!("Acquired '{}'!", name));
+                                        self.set_toast(&format!("Acquired artifact '{}'!", relic.name));
                                     }
                                 }
                             }
 
                             ui.add_space(10.0);
-                            ui.label(RichText::new(name).strong().color(palette.text_primary));
-                            ui.label(RichText::new(format!("— {}", desc)).size(11.5).color(palette.text_secondary));
+                            ui.label(RichText::new(relic.name).strong().size(12.5).color(palette.text_primary));
+                            ui.label(RichText::new(format!("— {}", relic.desc)).size(11.5).color(palette.text_secondary));
                         });
                         ui.add_space(6.0);
                     }
@@ -1288,15 +1391,32 @@ impl FernDoroApp {
             ui.separator();
             ui.add_space(14.0);
 
-            // Row 1: Floor Objective
+            // Row 1: Auto-Defined Encounter (Zero manual friction, sessions already counted)
+            let active_course = if !self.pomodoro.active_subject_name.is_empty() {
+                Some(self.pomodoro.active_subject_name.as_str())
+            } else {
+                None
+            };
+            let auto_title = self.rogue.auto_encounter_title(active_course);
+            let total_count = self.rogue.vault.total_sessions_completed;
+            let run_count = self.rogue.current_run.sessions_in_run;
+
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Floor Objective:").strong().size(13.5).color(palette.text_primary));
+                ui.label(RichText::new("🎯 Target Encounter:").strong().size(13.5).color(palette.text_primary));
                 ui.add_space(10.0);
-                let edit = egui::TextEdit::singleline(&mut self.rogue.current_run.selected_task)
-                    .hint_text("Study Task, Topic, or Boss...")
-                    .desired_width(320.0)
-                    .margin(Margin::symmetric(10, 8));
-                ui.add(edit);
+                status_pill(
+                    ui,
+                    &auto_title,
+                    palette.accent_container.linear_multiply(0.4),
+                    palette.accent_primary,
+                );
+                ui.add_space(10.0);
+                status_pill(
+                    ui,
+                    &format!("Session #{} Logged (Run #{})", total_count + 1, run_count + 1),
+                    palette.bg_card_hover,
+                    palette.accent_secondary,
+                );
             });
 
             ui.add_space(14.0);
@@ -1347,7 +1467,13 @@ impl FernDoroApp {
                         .corner_radius(CornerRadius::same(22));
 
                     if ui.add(enter_btn).clicked() {
-                        self.rogue.start_encounter();
+                        let active_course = if !self.pomodoro.active_subject_name.is_empty() {
+                            Some(self.pomodoro.active_subject_name.as_str())
+                        } else {
+                            None
+                        };
+                        let auto_title = self.rogue.auto_encounter_title(active_course);
+                        self.rogue.start_encounter(&auto_title);
                         self.save_state();
                     }
                 });
@@ -1447,12 +1573,15 @@ impl FernDoroApp {
                 ui.horizontal(|ui| {
                     for i in 0..self.rogue.dealer_cards.len() {
                         let card = self.rogue.dealer_cards[i];
-                        let is_flipped = self.rogue.dealer_resolved;
+                        let is_revealed_by_tome = !self.rogue.dealer_resolved 
+                            && self.rogue.vault.unlocked_relics.contains("tome_of_revelation") 
+                            && i == 0;
+                        let is_flipped = self.rogue.dealer_resolved || is_revealed_by_tome;
 
                         let (card_bg, card_text, card_desc) = if is_flipped {
                             (palette.bg_card_hover, card.name(), card.description())
                         } else {
-                            (palette.accent_container, "🂠 Fate Card", "Click to Reveal")
+                            (palette.accent_container, "🂠 Mystery Fate Card", "Click to Reveal")
                         };
 
                         let frame = egui::Frame::new()
@@ -1464,20 +1593,25 @@ impl FernDoroApp {
                         frame.show(ui, |ui| {
                             ui.set_min_size(Vec2::new(180.0, 110.0));
                             ui.vertical_centered(|ui| {
+                                if is_revealed_by_tome {
+                                    status_pill(ui, "📖 Tome Foresight", palette.accent_container, palette.accent_primary);
+                                    ui.add_space(4.0);
+                                }
                                 ui.label(RichText::new(card_text).strong().size(14.0).color(Color32::WHITE));
                                 ui.add_space(4.0);
                                 ui.label(RichText::new(card_desc).size(11.0).color(palette.text_secondary));
 
-                                if !is_flipped {
+                                if !self.rogue.dealer_resolved {
                                     ui.add_space(8.0);
-                                    if ui.button(RichText::new("Reveal").strong().color(palette.bg_deep)).clicked() {
+                                    let btn_text = if is_revealed_by_tome { "Choose Card" } else { "Reveal" };
+                                    if ui.button(RichText::new(btn_text).strong().color(palette.bg_deep)).clicked() {
                                         self.rogue.draw_card(i);
                                         self.save_state();
                                     }
                                 }
                             });
                         });
-                        ui.add_space(6.0);
+                        ui.add_space(10.0);
                     }
                 });
 
