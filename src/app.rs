@@ -216,7 +216,7 @@ impl FernDoroApp {
                     .color(palette.accent_primary),
             );
 
-            ui.add_space(16.0);
+            ui.add_space(24.0);
 
             // Material 3 Navigation Pill Tabs
             let tabs = [
@@ -232,21 +232,29 @@ impl FernDoroApp {
                 let is_active = self.active_tab == tab;
                 let bg_color = if is_active { palette.accent_container } else { Color32::TRANSPARENT };
                 let text_color = if is_active { palette.on_accent_container } else { palette.text_secondary };
+                let stroke = if is_active {
+                    egui::Stroke::new(1.0_f32, palette.accent_primary.linear_multiply(0.4))
+                } else {
+                    egui::Stroke::NONE
+                };
 
                 let label_text = format!("{} {}", icon, title);
                 let btn = egui::Button::new(RichText::new(label_text).strong().size(13.0).color(text_color))
                     .fill(bg_color)
-                    .stroke(egui::Stroke::NONE)
-                    .corner_radius(CornerRadius::same(20));
+                    .stroke(stroke)
+                    .min_size(Vec2::new(0.0, 32.0))
+                    .corner_radius(CornerRadius::same(18));
 
                 if ui.add(btn).clicked() {
                     self.active_tab = tab;
                 }
-                ui.add_space(2.0);
+                ui.add_space(8.0);
             }
 
             // GAMIFIED TOP HUD (Level, Gold, Streaks)
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.add_space(8.0);
+
                 // Gold Display: Prominent, clear, elegant
                 let pot_info = if self.rogue.current_run.unbanked_gold > 0 {
                     format!(" (+{}g pot)", self.rogue.current_run.unbanked_gold)
@@ -260,7 +268,7 @@ impl FernDoroApp {
                     palette.accent_tertiary,
                 );
 
-                ui.add_space(6.0);
+                ui.add_space(12.0);
 
                 // Level & XP Pill
                 let lvl = self.rogue.vault.level;
@@ -273,7 +281,7 @@ impl FernDoroApp {
                     palette.accent_primary,
                 );
 
-                ui.add_space(6.0);
+                ui.add_space(12.0);
 
                 // Streak Pill
                 let streak = self.frequency.current_streak_days();
@@ -284,11 +292,10 @@ impl FernDoroApp {
                     palette.accent_secondary,
                 );
 
-                ui.add_space(6.0);
-
                 // Active Exam Indicator if test <= 7 days
                 let today = Local::now().date_naive();
                 if let Some(urgent_exam) = self.exams.exams.iter().find(|e| e.days_remaining(today) <= 7 && e.days_remaining(today) >= 0) {
+                    ui.add_space(12.0);
                     let days = urgent_exam.days_remaining(today);
                     status_pill(
                         ui,
@@ -300,8 +307,9 @@ impl FernDoroApp {
             });
         });
 
-        ui.add_space(8.0);
+        ui.add_space(10.0);
         ui.separator();
+        ui.add_space(4.0);
     }
 
     fn render_pomodoro_tab(&mut self, ui: &mut Ui, palette: &ThemePalette) {
@@ -454,9 +462,11 @@ impl FernDoroApp {
             ui.horizontal(|ui| {
                 let session_str = format!("{}/{}", self.pomodoro.current_cycle_count, self.pomodoro.config.sessions_before_long_break);
                 stat_card(ui, palette, TARGET, "Long Break In", &session_str, Some("sessions until 15m rest"));
+                ui.add_space(12.0);
                 
                 let today_log = self.frequency.today_log();
                 stat_card(ui, palette, CLOCK, "Completed Today", &format!("{} Pomodoros", today_log.pomodoros_completed), Some(&format!("{}m focused today", today_log.minutes_studied)));
+                ui.add_space(12.0);
                 
                 let total_sessions = self.pomodoro.total_completed_sessions;
                 stat_card(ui, palette, TROPHY, "All-Time Sessions", &format!("{}", total_sessions), Some("total completed"));
@@ -637,13 +647,17 @@ impl FernDoroApp {
                         ui.horizontal(|ui| {
                             let fill_c = parse_hex_color(&subject.color_hex).unwrap_or(palette.accent_secondary);
                             ui.label(RichText::new("●").size(15.0).color(fill_c));
+                            ui.add_space(6.0);
                             ui.label(RichText::new(&subject.name).size(15.0).strong().color(palette.text_primary));
+                            ui.add_space(10.0);
 
                             if is_active {
                                 status_pill(ui, &format!("{} Active Quest", TARGET), palette.accent_container, palette.on_accent_container);
+                                ui.add_space(8.0);
                             }
                             if subject.is_completed() {
                                 status_pill(ui, &format!("{} Cleared (+15 XP)", CHECK), palette.success.linear_multiply(0.2), palette.success);
+                                ui.add_space(8.0);
                             }
 
                             if let Some(exam) = self.exams.exams.iter().find(|e| e.subject_name.eq_ignore_ascii_case(&subject.name)) {
@@ -655,19 +669,22 @@ impl FernDoroApp {
                                 if ui.button(RichText::new(TRASH).size(13.0).color(palette.text_muted)).clicked() {
                                     to_delete = Some(idx);
                                 }
+                                ui.add_space(6.0);
                                 if ui.button(RichText::new(CHEVRON_DOWN).size(13.0)).clicked() {
                                     to_move_down = Some(idx);
                                 }
+                                ui.add_space(4.0);
                                 if ui.button(RichText::new(CHEVRON_UP).size(13.0)).clicked() {
                                     to_move_up = Some(idx);
                                 }
+                                ui.add_space(6.0);
                                 if !is_active && ui.button("Set Active").clicked() {
                                     set_active = Some(idx);
                                 }
                             });
                         });
 
-                        ui.add_space(4.0);
+                        ui.add_space(6.0);
 
                         let detail_text = if subject.boost_minutes > 0 {
                             format!("{}/{} (Base {}m + Trial Boost {}m)", 
@@ -687,20 +704,23 @@ impl FernDoroApp {
                                 .height(10.0),
                         );
 
-                        ui.add_space(6.0);
+                        ui.add_space(8.0);
 
                         ui.horizontal(|ui| {
                             ui.label(RichText::new("Target:").size(12.0).color(palette.text_secondary));
+                            ui.add_space(4.0);
                             ui.label(RichText::new(StudySubject::format_time(subject.base_minutes)).strong().size(13.0).color(palette.accent_primary));
+                            ui.add_space(8.0);
 
                             if ui.button("-15m").clicked() {
                                 adjust_base = Some((idx, -15));
                             }
+                            ui.add_space(4.0);
                             if ui.button("+15m").clicked() {
                                 adjust_base = Some((idx, 15));
                             }
 
-                            ui.add_space(4.0);
+                            ui.add_space(10.0);
                             for &chip_mins in &[25, 45, 60, 90] {
                                 let is_current = subject.base_minutes == chip_mins;
                                 let chip_btn = egui::Button::new(RichText::new(format!("{}m", chip_mins)).size(11.0).color(if is_current { palette.on_accent_container } else { palette.text_secondary }))
@@ -711,6 +731,7 @@ impl FernDoroApp {
                                 if ui.add(chip_btn).clicked() {
                                     set_preset_time = Some((idx, chip_mins));
                                 }
+                                ui.add_space(6.0);
                             }
 
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -864,8 +885,11 @@ impl FernDoroApp {
                             ui.vertical(|ui| {
                                 ui.horizontal(|ui| {
                                     ui.label(RichText::new(&exam.subject_name).size(15.5).strong().color(palette.accent_primary));
+                                    ui.add_space(6.0);
                                     ui.label(RichText::new("•").color(palette.text_muted));
+                                    ui.add_space(6.0);
                                     ui.label(RichText::new(&exam.test_title).size(14.5).strong().color(palette.text_primary));
+                                    ui.add_space(10.0);
                                     status_pill(ui, urgency_label, badge_color.linear_multiply(0.2), badge_color);
                                 });
 
@@ -937,10 +961,12 @@ impl FernDoroApp {
                     ui.label("Days until exam:");
                     ui.add(egui::Slider::new(&mut self.new_exam_days, 1..=60).suffix(" days"));
 
+                    ui.add_space(8.0);
                     for &chip_d in &[3, 7, 14, 21] {
                         if ui.selectable_label(self.new_exam_days == chip_d, format!("{}d", chip_d)).clicked() {
                             self.new_exam_days = chip_d;
                         }
+                        ui.add_space(6.0);
                     }
                 });
 
@@ -993,83 +1019,102 @@ impl FernDoroApp {
     fn render_rogue_tab(&mut self, ui: &mut Ui, palette: &ThemePalette) {
         ScrollArea::vertical().show(ui, |ui| {
             // SECTOR 1: THE GOLD & RUN VAULT HUD (PROMINENT & MINIMALIST)
-            card_frame(palette).show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    // Left: Vault Gold Reserve
+            egui::Frame::new()
+                .fill(palette.bg_card)
+                .stroke(egui::Stroke::new(1.0_f32, palette.bg_card_border))
+                .corner_radius(CornerRadius::same(18))
+                .inner_margin(Margin::symmetric(24, 18))
+                .show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        ui.label(RichText::new(COIN).size(32.0).color(palette.accent_tertiary));
-                        ui.vertical(|ui| {
-                            ui.label(RichText::new("VAULT RESERVE (SAFE)").size(10.5).color(palette.text_secondary));
-                            ui.label(
-                                RichText::new(format!("{} Gold", self.rogue.vault.vault_gold))
-                                    .size(22.0)
-                                    .strong()
-                                    .color(palette.accent_tertiary),
-                            );
-                        });
-                    });
-
-                    ui.add_space(24.0);
-
-                    // Center: Run Multiplier & Soul Shields
-                    ui.vertical(|ui| {
-                        ui.label(RichText::new(format!("Floor {} Encounter", self.rogue.current_run.floor_number)).size(11.0).color(palette.text_secondary));
+                        // Left: Vault Gold Reserve
                         ui.horizontal(|ui| {
-                            status_pill(ui, &format!("⚡ {:.2}x Mult", self.rogue.current_run.current_multiplier), palette.bg_card_hover, palette.accent_primary);
-                            status_pill(ui, &format!("{} {} Shields", SHIELD, self.rogue.current_run.soul_shields), palette.bg_card_hover, palette.text_primary);
+                            ui.label(RichText::new(COIN).size(30.0).color(palette.accent_tertiary));
+                            ui.add_space(14.0);
+                            ui.vertical(|ui| {
+                                ui.label(RichText::new("VAULT RESERVE (SAFE)").size(11.0).strong().color(palette.text_secondary));
+                                ui.label(
+                                    RichText::new(format!("{} Gold", self.rogue.vault.vault_gold))
+                                        .size(24.0)
+                                        .strong()
+                                        .color(palette.accent_tertiary),
+                                );
+                            });
                         });
-                    });
 
-                    // Right: Unbanked Pot & Instant Bank Button
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if self.rogue.current_run.unbanked_gold > 0 {
-                            let cash_out_btn = egui::Button::new(RichText::new("💰 Bank Gold to Vault").strong().color(palette.bg_deep))
-                                .fill(palette.accent_tertiary)
-                                .corner_radius(CornerRadius::same(18));
+                        ui.add_space(32.0);
 
-                            if ui.add(cash_out_btn).clicked() {
-                                let banked = self.rogue.cash_out();
-                                self.save_state();
-                                self.set_toast(&format!("Safely secured {} Gold into Vault!", banked));
-                            }
-                        }
-
+                        // Center: Run Multiplier & Soul Shields
                         ui.vertical(|ui| {
-                            ui.label(RichText::new("UNBANKED POT (AT RISK)").size(10.5).color(palette.text_secondary));
-                            ui.label(
-                                RichText::new(format!("+{} Gold", self.rogue.current_run.unbanked_gold))
-                                    .size(20.0)
-                                    .strong()
-                                    .color(palette.accent_primary),
-                            );
+                            ui.label(RichText::new(format!("Floor {} Encounter", self.rogue.current_run.floor_number)).size(11.0).color(palette.text_secondary));
+                            ui.add_space(4.0);
+                            ui.horizontal(|ui| {
+                                status_pill(ui, &format!("⚡ {:.2}x Mult", self.rogue.current_run.current_multiplier), palette.bg_card_hover, palette.accent_primary);
+                                ui.add_space(10.0);
+                                status_pill(ui, &format!("{} {} Shields", SHIELD, self.rogue.current_run.soul_shields), palette.bg_card_hover, palette.text_primary);
+                            });
+                        });
+
+                        // Right: Unbanked Pot & Instant Bank Button
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            ui.add_space(4.0);
+                            if self.rogue.current_run.unbanked_gold > 0 {
+                                let cash_out_btn = egui::Button::new(RichText::new("💰 Bank Gold to Vault").strong().color(palette.bg_deep))
+                                    .fill(palette.accent_tertiary)
+                                    .min_size(Vec2::new(0.0, 36.0))
+                                    .corner_radius(CornerRadius::same(18));
+
+                                if ui.add(cash_out_btn).clicked() {
+                                    let banked = self.rogue.cash_out();
+                                    self.save_state();
+                                    self.set_toast(&format!("Safely secured {} Gold into Vault!", banked));
+                                }
+                                ui.add_space(16.0);
+                            }
+
+                            ui.vertical(|ui| {
+                                ui.label(RichText::new("UNBANKED POT (AT RISK)").size(11.0).strong().color(palette.text_secondary));
+                                ui.label(
+                                    RichText::new(format!("+{} Gold", self.rogue.current_run.unbanked_gold))
+                                        .size(22.0)
+                                        .strong()
+                                        .color(palette.accent_primary),
+                                );
+                            });
                         });
                     });
                 });
-            });
 
-            ui.add_space(12.0);
+            ui.add_space(16.0);
 
             // SECTOR 2: RELIC SHOP & PERMANENT PROGRESSION (EXPANDABLE)
             ui.horizontal(|ui| {
                 let shop_label = if self.show_relic_shop { "Hide Relic Armory" } else { "Open Relic Armory & Artifacts" };
-                let shop_btn = egui::Button::new(RichText::new(format!("{} {}", VAULT, shop_label)).color(palette.text_primary))
+                let shop_btn = egui::Button::new(RichText::new(format!("{}  {}", VAULT, shop_label)).size(13.0).color(palette.text_primary))
                     .fill(palette.bg_card)
                     .stroke(egui::Stroke::new(1.0_f32, palette.bg_card_border))
+                    .min_size(Vec2::new(0.0, 34.0))
                     .corner_radius(CornerRadius::same(16));
 
                 if ui.add(shop_btn).clicked() {
                     self.show_relic_shop = !self.show_relic_shop;
                 }
 
-                ui.label(RichText::new(format!("Player Rank: {}", self.rogue.vault.equipped_title)).size(12.0).color(palette.accent_primary));
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    status_pill(
+                        ui,
+                        &format!("👑 Player Rank: {}", self.rogue.vault.equipped_title),
+                        palette.accent_container.linear_multiply(0.4),
+                        palette.accent_primary,
+                    );
+                });
             });
 
             if self.show_relic_shop {
-                ui.add_space(8.0);
+                ui.add_space(12.0);
                 elevated_card_frame(palette).show(ui, |ui| {
                     ui.label(RichText::new(format!("{} The Dungeon Relic Armory", VAULT)).size(15.5).strong().color(palette.accent_tertiary));
                     ui.label(RichText::new("Invest Vault Gold into permanent passive relics to survive higher floors:").size(12.0).color(palette.text_secondary));
-                    ui.add_space(8.0);
+                    ui.add_space(10.0);
 
                     let relics = [
                         ("loaded_dice", "Loaded Dice", "Shifts fate card draw odds +15% towards Boons", 150),
@@ -1097,15 +1142,16 @@ impl FernDoroApp {
                                 }
                             }
 
+                            ui.add_space(10.0);
                             ui.label(RichText::new(name).strong().color(palette.text_primary));
                             ui.label(RichText::new(format!("— {}", desc)).size(11.5).color(palette.text_secondary));
                         });
-                        ui.add_space(4.0);
+                        ui.add_space(6.0);
                     }
                 });
             }
 
-            ui.add_space(12.0);
+            ui.add_space(16.0);
 
             // SECTOR 3: ACTIVE GAME STAGE ENGINE
             match self.rogue.phase {
@@ -1160,9 +1206,10 @@ impl FernDoroApp {
 
     fn render_rogue_ante_sector(&mut self, ui: &mut Ui, palette: &ThemePalette) {
         card_frame(palette).show(ui, |ui| {
-            ui.label(RichText::new(format!("{} Floor Contract & Discipline Wager", COIN)).size(16.0).strong().color(palette.text_primary));
+            ui.label(RichText::new(format!("{} Floor Contract & Discipline Wager", COIN)).size(16.5).strong().color(palette.text_primary));
+            ui.add_space(4.0);
             ui.label(RichText::new("Select your risk tier. Harder tiers strictly lock pauses and penalize leaving the window, but multiply payouts:").size(12.0).color(palette.text_secondary));
-            ui.add_space(10.0);
+            ui.add_space(14.0);
 
             // Active Modifier Banner if any
             if self.rogue.current_run.active_modifier != FateModifier::None {
@@ -1170,9 +1217,10 @@ impl FernDoroApp {
                 let badge_color = if m.is_boon() { palette.success } else { palette.warning };
                 ui.horizontal(|ui| {
                     status_pill(ui, &format!("Active Modifier: {}", m.name()), badge_color.linear_multiply(0.2), badge_color);
+                    ui.add_space(10.0);
                     ui.label(RichText::new(m.description()).size(12.0).color(palette.text_secondary));
                 });
-                ui.add_space(10.0);
+                ui.add_space(14.0);
             }
 
             let antes = [
@@ -1184,68 +1232,125 @@ impl FernDoroApp {
 
             for ante in antes {
                 let is_selected = self.rogue.current_run.selected_ante == ante;
-                let bg_color = if is_selected { palette.accent_container } else { palette.bg_card_hover };
-                let text_color = if is_selected { palette.on_accent_container } else { palette.text_primary };
+                let bg_color = if is_selected {
+                    palette.accent_container.linear_multiply(0.4)
+                } else {
+                    palette.bg_card_hover
+                };
+                let border_color = if is_selected { palette.accent_primary } else { palette.bg_card_border };
+                let border_width = if is_selected { 1.5_f32 } else { 1.0_f32 };
 
                 let frame = egui::Frame::new()
                     .fill(bg_color)
-                    .stroke(egui::Stroke::new(1.0_f32, if is_selected { palette.accent_primary } else { palette.bg_card_border }))
-                    .corner_radius(CornerRadius::same(14))
-                    .inner_margin(Margin::same(12));
+                    .stroke(egui::Stroke::new(border_width, border_color))
+                    .corner_radius(CornerRadius::same(16))
+                    .inner_margin(Margin::symmetric(18, 14));
 
-                frame.show(ui, |ui| {
+                let response = frame.show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        if ui.selectable_label(is_selected, ante.name()).clicked() {
-                            self.rogue.current_run.selected_ante = ante;
-                            if self.rogue.current_run.floor_duration_mins < ante.min_minutes() {
-                                self.rogue.current_run.floor_duration_mins = ante.min_minutes();
-                            }
-                        }
+                        // Badge Pill on the left
+                        let (badge_bg, badge_fg) = if is_selected {
+                            (palette.accent_primary, palette.bg_deep)
+                        } else {
+                            (palette.bg_card, palette.text_primary)
+                        };
+                        status_pill(ui, ante.name(), badge_bg, badge_fg);
 
-                        ui.vertical(|ui| {
-                            ui.label(RichText::new(ante.description()).size(11.5).color(text_color));
+                        ui.add_space(16.0);
+
+                        // Description in center
+                        let text_color = if is_selected { palette.text_primary } else { palette.text_secondary };
+                        ui.label(RichText::new(ante.description()).size(12.0).color(text_color));
+
+                        // Multiplier and rules pill on the right
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let (rule_text, rule_color) = match ante {
+                                AnteTier::SafeBet1x => ("⚡ 1.0x • 2 Pauses", palette.text_secondary),
+                                AnteTier::DoubleDown2x => ("⚡ 2.0x • Zero Pauses", palette.accent_secondary),
+                                AnteTier::AllInBoss3x => ("⚡ 3.0x • Boss Strict", palette.warning),
+                                AnteTier::AllInBoss5x => ("⚡ 5.0x • Nightmare", palette.error),
+                            };
+                            status_pill(ui, rule_text, palette.bg_deep, rule_color);
                         });
                     });
                 });
-                ui.add_space(4.0);
+
+                if response.response.interact(egui::Sense::click()).clicked() {
+                    self.rogue.current_run.selected_ante = ante;
+                    if self.rogue.current_run.floor_duration_mins < ante.min_minutes() {
+                        self.rogue.current_run.floor_duration_mins = ante.min_minutes();
+                    }
+                }
+                ui.add_space(10.0);
             }
 
-            ui.add_space(10.0);
+            ui.add_space(12.0);
             ui.separator();
-            ui.add_space(8.0);
+            ui.add_space(14.0);
 
-            // Task & Duration
+            // Row 1: Floor Objective
             ui.horizontal(|ui| {
-                ui.label("Floor Objective:");
-                ui.add(egui::TextEdit::singleline(&mut self.rogue.current_run.selected_task).hint_text("Study Task or Boss"));
+                ui.label(RichText::new("Floor Objective:").strong().size(13.5).color(palette.text_primary));
+                ui.add_space(10.0);
+                let edit = egui::TextEdit::singleline(&mut self.rogue.current_run.selected_task)
+                    .hint_text("Study Task, Topic, or Boss...")
+                    .desired_width(320.0)
+                    .margin(Margin::symmetric(10, 8));
+                ui.add(edit);
+            });
 
-                ui.add_space(8.0);
-                ui.label("Duration:");
+            ui.add_space(14.0);
+
+            // Row 2: Duration Selector
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("Session Duration:").strong().size(13.5).color(palette.text_primary));
+                ui.add_space(12.0);
                 for &mins in &[25, 45, 50, 60] {
                     if mins >= self.rogue.current_run.selected_ante.min_minutes() {
-                        if ui.selectable_label(self.rogue.current_run.floor_duration_mins == mins, format!("{}m", mins)).clicked() {
+                        let is_sel = self.rogue.current_run.floor_duration_mins == mins;
+                        let dur_btn = egui::Button::new(
+                            RichText::new(format!("{}m", mins))
+                                .strong()
+                                .size(13.0)
+                                .color(if is_sel { palette.on_accent_container } else { palette.text_secondary })
+                        )
+                        .fill(if is_sel { palette.accent_container } else { palette.bg_card_hover })
+                        .stroke(egui::Stroke::new(1.0_f32, if is_sel { palette.accent_primary } else { palette.bg_card_border }))
+                        .corner_radius(CornerRadius::same(16))
+                        .min_size(Vec2::new(56.0, 32.0));
+
+                        if ui.add(dur_btn).clicked() {
                             self.rogue.current_run.floor_duration_mins = mins;
                         }
+                        ui.add_space(10.0);
                     }
                 }
             });
 
-            ui.add_space(12.0);
+            ui.add_space(18.0);
 
+            // Row 3: Rewards & Enter Encounter CTA
             let potential_payout = self.rogue.calculate_floor_payout();
             let potential_xp = self.rogue.calculate_floor_xp();
             ui.horizontal(|ui| {
-                ui.label(RichText::new(format!("Est. Reward: ~{} Gold • +{} XP", potential_payout, potential_xp)).size(13.5).strong().color(palette.accent_tertiary));
+                status_pill(
+                    ui,
+                    &format!("🎁 Est. Encounter Yield: ~{} Gold  •  +{} XP", potential_payout, potential_xp),
+                    palette.accent_tertiary.linear_multiply(0.18),
+                    palette.accent_tertiary,
+                );
 
-                let enter_btn = egui::Button::new(RichText::new(format!("{} Enter Encounter", SWORD)).size(15.0).strong().color(palette.bg_deep))
-                    .fill(palette.accent_primary)
-                    .min_size(Vec2::new(160.0, 42.0))
-                    .corner_radius(CornerRadius::same(20));
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let enter_btn = egui::Button::new(RichText::new(format!("{}  Enter Encounter", SWORD)).size(15.0).strong().color(palette.bg_deep))
+                        .fill(palette.accent_primary)
+                        .min_size(Vec2::new(180.0, 44.0))
+                        .corner_radius(CornerRadius::same(22));
 
-                if ui.add(enter_btn).clicked() {
-                    self.rogue.start_encounter();
-                    self.save_state();
-                }
+                    if ui.add(enter_btn).clicked() {
+                        self.rogue.start_encounter();
+                        self.save_state();
+                    }
+                });
             });
         });
     }
@@ -1419,14 +1524,17 @@ impl FernDoroApp {
             ui.horizontal(|ui| {
                 let streak = self.frequency.current_streak_days();
                 stat_card(ui, palette, FLAME, "Current Streak", &format!("{} Days", streak), Some("consecutive study days"));
+                ui.add_space(10.0);
 
                 let best = self.frequency.best_streak_days();
                 stat_card(ui, palette, TROPHY, "Best Streak", &format!("{} Days", best), Some("all-time record"));
+                ui.add_space(10.0);
 
                 let total_mins = self.frequency.total_minutes_all_time();
                 let hours = total_mins / 60;
                 let mins = total_mins % 60;
                 stat_card(ui, palette, CLOCK, "Total Study Time", &format!("{}h {}m", hours, mins), Some("across all sessions"));
+                ui.add_space(10.0);
 
                 let active_days = self.frequency.total_active_days();
                 stat_card(ui, palette, CALENDAR, "Active Days", &format!("{} Days", active_days), Some("days with logged work"));

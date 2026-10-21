@@ -1,4 +1,4 @@
-use egui::{epaint::CornerRadius, epaint::Stroke, Color32, Frame, Margin, Response, Ui, Vec2};
+use egui::{epaint::CornerRadius, epaint::Stroke, epaint::StrokeKind, Color32, Frame, Margin, Response, Ui, Vec2};
 use crate::theme::ThemePalette;
 
 pub fn card_frame(palette: &ThemePalette) -> Frame {
@@ -65,15 +65,18 @@ pub fn stat_card(
 }
 
 pub fn status_pill(ui: &mut Ui, text: &str, bg: Color32, fg: Color32) -> Response {
-    let padding = Vec2::new(12.0, 5.0);
-    let font_id = egui::FontId::proportional(12.0);
+    let padding = Vec2::new(14.0, 6.0);
+    let font_id = egui::FontId::proportional(12.5);
     let galley = ui.painter().layout_no_wrap(text.to_string(), font_id, fg);
     let desired_size = galley.size() + padding * 2.0;
 
     let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::hover());
     if ui.is_rect_visible(rect) {
         let painter = ui.painter_at(rect);
-        painter.rect_filled(rect, CornerRadius::same(14), bg);
+        let radius = CornerRadius::same(16);
+        painter.rect_filled(rect, radius, bg);
+        let border_color = fg.linear_multiply(0.28);
+        painter.rect_stroke(rect, radius, Stroke::new(1.0_f32, border_color), StrokeKind::Inside);
         painter.galley(rect.min + padding, galley, fg);
     }
     response
