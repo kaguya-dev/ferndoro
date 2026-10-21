@@ -3,118 +3,136 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ThemeMode {
-    PurpleDark,
-    MidnightViolet,
-    CyberNeon,
-    ObsidianAmethyst,
+    MaterialYouViolet,
+    MidnightAmethyst,
+    CyberVelvet,
+    MinimalObsidian,
 }
 
 impl Default for ThemeMode {
     fn default() -> Self {
-        Self::PurpleDark
+        Self::MaterialYouViolet
     }
 }
 
 impl ThemeMode {
     pub fn name(&self) -> &'static str {
         match self {
-            Self::PurpleDark => "Purple Dark (Default)",
-            Self::MidnightViolet => "Midnight Violet",
-            Self::CyberNeon => "Cyber Neon",
-            Self::ObsidianAmethyst => "Obsidian Amethyst",
+            Self::MaterialYouViolet => "Material You Amethyst (Default)",
+            Self::MidnightAmethyst => "Midnight Tonal Violet",
+            Self::CyberVelvet => "Cyber Velvet (Rose & Violet)",
+            Self::MinimalObsidian => "Minimal Obsidian",
         }
     }
 
     pub fn all() -> &'static [ThemeMode] {
         &[
-            ThemeMode::PurpleDark,
-            ThemeMode::MidnightViolet,
-            ThemeMode::CyberNeon,
-            ThemeMode::ObsidianAmethyst,
+            ThemeMode::MaterialYouViolet,
+            ThemeMode::MidnightAmethyst,
+            ThemeMode::CyberVelvet,
+            ThemeMode::MinimalObsidian,
         ]
     }
 
     pub fn colors(&self) -> ThemePalette {
         match self {
-            Self::PurpleDark => ThemePalette {
-                bg_deep: Color32::from_rgb(15, 12, 24),        // #0F0C18
-                bg_card: Color32::from_rgb(26, 20, 42),        // #1A142A
-                bg_card_hover: Color32::from_rgb(37, 28, 61),  // #251C3D
-                bg_card_border: Color32::from_rgb(79, 46, 128),// #4F2E80
+            Self::MaterialYouViolet => ThemePalette {
+                // Material 3 Dark Surface tonal tiers
+                bg_deep: Color32::from_rgb(18, 16, 22),         // #121016 Surface
+                bg_card: Color32::from_rgb(29, 25, 38),         // #1D1926 Surface Container
+                bg_card_hover: Color32::from_rgb(38, 33, 51),   // #262133 Surface Container High
+                bg_card_border: Color32::from_rgb(53, 46, 68),  // #352E44 Outline Variant
                 
-                accent_primary: Color32::from_rgb(168, 85, 247),   // Vibrant Amethyst #A855F7
-                accent_secondary: Color32::from_rgb(192, 132, 252),// Light Violet #C084FC
-                accent_glow: Color32::from_rgb(232, 121, 249),     // Fuchsia Neon #E879F9
-                accent_dark: Color32::from_rgb(91, 33, 182),       // Deep Purple #5B21B6
+                // Material 3 Dynamic Lavender/Amethyst
+                accent_primary: Color32::from_rgb(208, 188, 255),    // #D0BCFF Primary
+                accent_container: Color32::from_rgb(79, 55, 139),    // #4F378B Primary Container (Active pill)
+                on_accent_container: Color32::from_rgb(234, 221, 255), // #EADDFF
+                accent_secondary: Color32::from_rgb(204, 194, 220),  // #CCC2DC Secondary
+                accent_tertiary: Color32::from_rgb(239, 184, 200),   // #EFB8C8 Tertiary Rose/Gold
+                accent_glow: Color32::from_rgb(219, 175, 253),       // #DBAFFD Soft glow
+                accent_dark: Color32::from_rgb(56, 30, 114),         // #381E72 On Primary
+
+                text_primary: Color32::from_rgb(230, 225, 229),      // #E6E1E5 On Surface
+                text_secondary: Color32::from_rgb(202, 196, 208),    // #CAC4D0 On Surface Variant
+                text_muted: Color32::from_rgb(147, 143, 153),        // #938F99 Muted
                 
-                text_primary: Color32::from_rgb(255, 255, 255),
-                text_secondary: Color32::from_rgb(209, 196, 233),  // Soft Lilac #D1C4E9
-                text_muted: Color32::from_rgb(138, 120, 168),      // Muted Purple #8A78A8
-                
-                success: Color32::from_rgb(52, 211, 153),          // Emerald
-                warning: Color32::from_rgb(251, 191, 36),          // Amber
-                break_phase: Color32::from_rgb(56, 189, 248),      // Sky Blue
-                track_bg: Color32::from_rgb(33, 25, 54),
+                success: Color32::from_rgb(133, 217, 150),          // #85D996 Sage Green
+                warning: Color32::from_rgb(247, 186, 85),           // #F7BA55 Warm Amber
+                error: Color32::from_rgb(242, 184, 181),             // #F2B8B5 Coral Red
+                break_phase: Color32::from_rgb(165, 216, 255),       // #A5D8FF Calm Cyan
+                track_bg: Color32::from_rgb(40, 35, 53),            // #282335
             },
-            Self::MidnightViolet => ThemePalette {
-                bg_deep: Color32::from_rgb(10, 10, 20),
-                bg_card: Color32::from_rgb(20, 19, 38),
-                bg_card_hover: Color32::from_rgb(30, 28, 56),
-                bg_card_border: Color32::from_rgb(60, 52, 104),
+            Self::MidnightAmethyst => ThemePalette {
+                bg_deep: Color32::from_rgb(14, 13, 20),
+                bg_card: Color32::from_rgb(24, 22, 34),
+                bg_card_hover: Color32::from_rgb(34, 30, 48),
+                bg_card_border: Color32::from_rgb(48, 44, 66),
                 
-                accent_primary: Color32::from_rgb(139, 92, 246),
-                accent_secondary: Color32::from_rgb(167, 139, 250),
-                accent_glow: Color32::from_rgb(217, 70, 239),
-                accent_dark: Color32::from_rgb(76, 29, 149),
+                accent_primary: Color32::from_rgb(194, 175, 255),
+                accent_container: Color32::from_rgb(67, 48, 122),
+                on_accent_container: Color32::from_rgb(228, 218, 255),
+                accent_secondary: Color32::from_rgb(196, 188, 212),
+                accent_tertiary: Color32::from_rgb(242, 194, 208),
+                accent_glow: Color32::from_rgb(210, 168, 255),
+                accent_dark: Color32::from_rgb(48, 26, 96),
                 
-                text_primary: Color32::from_rgb(248, 250, 252),
-                text_secondary: Color32::from_rgb(203, 213, 225),
-                text_muted: Color32::from_rgb(112, 107, 146),
+                text_primary: Color32::from_rgb(238, 234, 242),
+                text_secondary: Color32::from_rgb(192, 187, 201),
+                text_muted: Color32::from_rgb(136, 132, 148),
                 
-                success: Color32::from_rgb(45, 212, 191),
-                warning: Color32::from_rgb(245, 158, 11),
-                break_phase: Color32::from_rgb(96, 165, 250),
-                track_bg: Color32::from_rgb(27, 25, 50),
+                success: Color32::from_rgb(140, 220, 165),
+                warning: Color32::from_rgb(248, 195, 105),
+                error: Color32::from_rgb(244, 168, 164),
+                break_phase: Color32::from_rgb(168, 218, 255),
+                track_bg: Color32::from_rgb(32, 28, 44),
             },
-            Self::CyberNeon => ThemePalette {
-                bg_deep: Color32::from_rgb(8, 7, 13),
-                bg_card: Color32::from_rgb(18, 14, 29),
-                bg_card_hover: Color32::from_rgb(32, 23, 53),
-                bg_card_border: Color32::from_rgb(147, 51, 234),
+            Self::CyberVelvet => ThemePalette {
+                bg_deep: Color32::from_rgb(16, 12, 20),
+                bg_card: Color32::from_rgb(28, 20, 36),
+                bg_card_hover: Color32::from_rgb(40, 28, 52),
+                bg_card_border: Color32::from_rgb(64, 44, 82),
                 
-                accent_primary: Color32::from_rgb(217, 70, 239),   // Hot Pink Neon
-                accent_secondary: Color32::from_rgb(192, 38, 211),
-                accent_glow: Color32::from_rgb(34, 211, 238),      // Cyan Neon
-                accent_dark: Color32::from_rgb(112, 26, 117),
+                accent_primary: Color32::from_rgb(234, 155, 245),
+                accent_container: Color32::from_rgb(98, 38, 110),
+                on_accent_container: Color32::from_rgb(250, 215, 255),
+                accent_secondary: Color32::from_rgb(216, 180, 226),
+                accent_tertiary: Color32::from_rgb(255, 179, 196),
+                accent_glow: Color32::from_rgb(245, 178, 255),
+                accent_dark: Color32::from_rgb(68, 22, 78),
                 
-                text_primary: Color32::from_rgb(255, 255, 255),
-                text_secondary: Color32::from_rgb(240, 171, 252),
-                text_muted: Color32::from_rgb(140, 105, 168),
+                text_primary: Color32::from_rgb(245, 238, 248),
+                text_secondary: Color32::from_rgb(212, 198, 218),
+                text_muted: Color32::from_rgb(148, 130, 156),
                 
-                success: Color32::from_rgb(74, 222, 128),
-                warning: Color32::from_rgb(250, 204, 21),
-                break_phase: Color32::from_rgb(34, 211, 238),
-                track_bg: Color32::from_rgb(25, 18, 41),
+                success: Color32::from_rgb(130, 225, 160),
+                warning: Color32::from_rgb(252, 190, 95),
+                error: Color32::from_rgb(248, 160, 160),
+                break_phase: Color32::from_rgb(175, 225, 255),
+                track_bg: Color32::from_rgb(36, 26, 46),
             },
-            Self::ObsidianAmethyst => ThemePalette {
-                bg_deep: Color32::from_rgb(12, 10, 16),
-                bg_card: Color32::from_rgb(22, 18, 30),
-                bg_card_hover: Color32::from_rgb(34, 27, 46),
-                bg_card_border: Color32::from_rgb(67, 42, 99),
+            Self::MinimalObsidian => ThemePalette {
+                bg_deep: Color32::from_rgb(14, 14, 16),
+                bg_card: Color32::from_rgb(24, 24, 28),
+                bg_card_hover: Color32::from_rgb(34, 34, 40),
+                bg_card_border: Color32::from_rgb(46, 46, 54),
                 
-                accent_primary: Color32::from_rgb(147, 51, 234),
-                accent_secondary: Color32::from_rgb(168, 85, 247),
-                accent_glow: Color32::from_rgb(244, 114, 182),
-                accent_dark: Color32::from_rgb(88, 28, 135),
+                accent_primary: Color32::from_rgb(216, 204, 242),
+                accent_container: Color32::from_rgb(58, 54, 76),
+                on_accent_container: Color32::from_rgb(236, 230, 250),
+                accent_secondary: Color32::from_rgb(198, 194, 208),
+                accent_tertiary: Color32::from_rgb(230, 196, 208),
+                accent_glow: Color32::from_rgb(210, 195, 240),
+                accent_dark: Color32::from_rgb(44, 40, 58),
                 
-                text_primary: Color32::from_rgb(253, 244, 255),
-                text_secondary: Color32::from_rgb(216, 180, 254),
-                text_muted: Color32::from_rgb(124, 101, 153),
+                text_primary: Color32::from_rgb(240, 240, 244),
+                text_secondary: Color32::from_rgb(196, 196, 204),
+                text_muted: Color32::from_rgb(138, 138, 148),
                 
-                success: Color32::from_rgb(52, 211, 153),
-                warning: Color32::from_rgb(251, 146, 60),
-                break_phase: Color32::from_rgb(129, 140, 248),
-                track_bg: Color32::from_rgb(29, 23, 40),
+                success: Color32::from_rgb(135, 215, 150),
+                warning: Color32::from_rgb(244, 188, 90),
+                error: Color32::from_rgb(238, 165, 165),
+                break_phase: Color32::from_rgb(165, 210, 245),
+                track_bg: Color32::from_rgb(32, 32, 38),
             },
         }
     }
@@ -127,37 +145,38 @@ impl ThemeMode {
         visuals.window_fill = palette.bg_card;
         visuals.extreme_bg_color = palette.bg_deep;
 
+        // Material 3 pill and rounded corners
         visuals.widgets.noninteractive.bg_fill = palette.bg_card;
         visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0_f32, palette.bg_card_border);
         visuals.widgets.noninteractive.fg_stroke = Stroke::new(1.0_f32, palette.text_secondary);
-        visuals.widgets.noninteractive.corner_radius = CornerRadius::same(8);
+        visuals.widgets.noninteractive.corner_radius = CornerRadius::same(16);
 
         visuals.widgets.inactive.bg_fill = palette.bg_card;
         visuals.widgets.inactive.bg_stroke = Stroke::new(1.0_f32, palette.bg_card_border);
         visuals.widgets.inactive.fg_stroke = Stroke::new(1.0_f32, palette.text_primary);
-        visuals.widgets.inactive.corner_radius = CornerRadius::same(8);
+        visuals.widgets.inactive.corner_radius = CornerRadius::same(16);
 
         visuals.widgets.hovered.bg_fill = palette.bg_card_hover;
-        visuals.widgets.hovered.bg_stroke = Stroke::new(1.5_f32, palette.accent_secondary);
-        visuals.widgets.hovered.fg_stroke = Stroke::new(1.5_f32, Color32::WHITE);
-        visuals.widgets.hovered.corner_radius = CornerRadius::same(8);
+        visuals.widgets.hovered.bg_stroke = Stroke::new(1.0_f32, palette.accent_primary);
+        visuals.widgets.hovered.fg_stroke = Stroke::new(1.0_f32, Color32::WHITE);
+        visuals.widgets.hovered.corner_radius = CornerRadius::same(16);
 
-        visuals.widgets.active.bg_fill = palette.accent_dark;
-        visuals.widgets.active.bg_stroke = Stroke::new(2.0_f32, palette.accent_glow);
-        visuals.widgets.active.fg_stroke = Stroke::new(2.0_f32, Color32::WHITE);
-        visuals.widgets.active.corner_radius = CornerRadius::same(8);
+        visuals.widgets.active.bg_fill = palette.accent_container;
+        visuals.widgets.active.bg_stroke = Stroke::new(1.5_f32, palette.accent_primary);
+        visuals.widgets.active.fg_stroke = Stroke::new(1.5_f32, palette.on_accent_container);
+        visuals.widgets.active.corner_radius = CornerRadius::same(16);
 
-        visuals.selection.bg_fill = palette.accent_primary;
-        visuals.selection.stroke = Stroke::new(1.5_f32, palette.accent_glow);
+        visuals.selection.bg_fill = palette.accent_container;
+        visuals.selection.stroke = Stroke::new(1.0_f32, palette.accent_primary);
 
-        visuals.window_corner_radius = CornerRadius::same(12);
-        visuals.window_stroke = Stroke::new(1.5_f32, palette.bg_card_border);
+        visuals.window_corner_radius = CornerRadius::same(24);
+        visuals.window_stroke = Stroke::new(1.0_f32, palette.bg_card_border);
 
         ctx.set_visuals(visuals);
 
         let mut style = (*ctx.style()).clone();
-        style.spacing.item_spacing = Vec2::new(10.0, 10.0);
-        style.spacing.button_padding = Vec2::new(12.0, 7.0);
+        style.spacing.item_spacing = Vec2::new(12.0, 12.0);
+        style.spacing.button_padding = Vec2::new(16.0, 9.0);
         ctx.set_style(style);
     }
 }
@@ -170,8 +189,12 @@ pub struct ThemePalette {
     pub bg_card_border: Color32,
     
     pub accent_primary: Color32,
+    pub accent_container: Color32,
+    pub on_accent_container: Color32,
     pub accent_secondary: Color32,
+    pub accent_tertiary: Color32,
     pub accent_glow: Color32,
+    #[allow(dead_code)]
     pub accent_dark: Color32,
     
     pub text_primary: Color32,
@@ -180,6 +203,7 @@ pub struct ThemePalette {
     
     pub success: Color32,
     pub warning: Color32,
+    pub error: Color32,
     pub break_phase: Color32,
     pub track_bg: Color32,
 }

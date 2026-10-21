@@ -17,7 +17,7 @@ impl<'a> CustomProgressBar<'a> {
             progress: progress.clamp(0.0, 1.0),
             label: None,
             detail: None,
-            height: 14.0,
+            height: 12.0,
             fill_color,
             glow_color,
             bg_color,
@@ -68,7 +68,7 @@ impl<'a> Widget for CustomProgressBar<'a> {
                     Pos2::new(rect.min.x, bar_top),
                     egui::Align2::LEFT_TOP,
                     label,
-                    egui::FontId::proportional(13.0),
+                    egui::FontId::proportional(12.5),
                     Color32::WHITE,
                 );
 
@@ -99,16 +99,16 @@ impl<'a> Widget for CustomProgressBar<'a> {
 
             let radius_u8 = (self.height / 2.0).round().clamp(1.0, 255.0) as u8;
 
-            // Draw track background
+            // Material 3 pill track
             painter.rect_filled(bar_rect, CornerRadius::same(radius_u8), self.bg_color);
             painter.rect_stroke(
                 bar_rect,
                 CornerRadius::same(radius_u8),
-                Stroke::new(1.0_f32, self.fill_color.linear_multiply(0.2)),
+                Stroke::new(1.0_f32, self.fill_color.linear_multiply(0.15)),
                 StrokeKind::Outside,
             );
 
-            // Draw filled progress
+            // Filled progress with smooth pill rounding
             let filled_width = (bar_rect.width() * self.progress).max(0.0);
             if filled_width > 2.0 {
                 let fill_rect = Rect::from_min_max(
@@ -116,26 +116,11 @@ impl<'a> Widget for CustomProgressBar<'a> {
                     Pos2::new(bar_rect.min.x + filled_width, bar_rect.max.y),
                 );
 
-                // Glow shadow
                 painter.rect_filled(
                     fill_rect,
                     CornerRadius::same(radius_u8),
                     self.fill_color,
                 );
-
-                // Highlight strip on top edge
-                let highlight_rect = Rect::from_min_max(
-                    fill_rect.min + Vec2::new(2.0, 1.0),
-                    Pos2::new(fill_rect.max.x - 2.0, fill_rect.min.y + self.height * 0.4),
-                );
-                if highlight_rect.width() > 1.0 {
-                    let small_rad = (self.height / 4.0).round().clamp(1.0, 255.0) as u8;
-                    painter.rect_filled(
-                        highlight_rect,
-                        CornerRadius::same(small_rad),
-                        self.glow_color.linear_multiply(0.5),
-                    );
-                }
             }
         }
 

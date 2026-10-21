@@ -34,3 +34,15 @@ pub const TEST_PENCIL: &str = "\u{f042d}";    // Exam / Test Mode
 pub const PRESET_LIST: &str = "\u{f0219}";    // Preset Builder / Templates
 pub const CALENDAR_ALERT: &str = "\u{f05a9}"; // Upcoming Exam Alert
 pub const BOLT: &str = "\u{f0469}";           // Auto-balance boost
+
+// Rogue-Pomodoro (Game Mode) icons
+pub const SWORD: &str = "\u{f03b2}";          // Battle / Dungeon Floor
+pub const CARDS: &str = "\u{f0862}";          // Fate Cards / Floor Dealer
+#[allow(dead_code)]
+pub const DICE: &str = "\u{f0849}";           // Dice / RNG
+pub const COIN: &str = "\u{f0160}";           // Gold / Focus Tokens
+pub const SHIELD: &str = "\u{f049a}";         // Soul Shield
+pub const SKULL: &str = "\u{f04b2}";          // Curses / Boss / Danger
+pub const VAULT: &str = "\u{f0b83}";          // Vault / Chest
+#[allow(dead_code)]
+pub const HOURGLASS: &str = "\u{f05ca}";      // Temporal Flux / Time

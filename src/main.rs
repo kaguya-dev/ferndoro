@@ -6,6 +6,7 @@ mod frequency;
 mod icons;
 mod notification;
 mod pomodoro;
+mod rogue;
 mod storage;
 mod theme;
 mod widgets;
@@ -17,9 +18,9 @@ fn main() -> eframe::Result<()> {
     let mut native_options = eframe::NativeOptions::default();
     
     native_options.viewport = egui::ViewportBuilder::default()
-        .with_inner_size(Vec2::new(1020.0, 740.0))
-        .with_min_inner_size(Vec2::new(860.0, 620.0))
-        .with_title("FernDoro - High Contrast Focus & Study Suite");
+        .with_inner_size(Vec2::new(1040.0, 750.0))
+        .with_min_inner_size(Vec2::new(880.0, 640.0))
+        .with_title("FernDoro - Material You Study & Rogue-Pomodoro Suite");
 
     eframe::run_native(
         "FernDoro",

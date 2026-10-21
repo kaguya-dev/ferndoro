@@ -11,6 +11,7 @@ pub struct TimerDial<'a> {
     pub progress_color: Color32,
     pub glow_color: Color32,
     pub is_running: bool,
+    pub is_blind: bool,
 }
 
 impl<'a> TimerDial<'a> {
@@ -29,12 +30,18 @@ impl<'a> TimerDial<'a> {
             time_str,
             phase_name,
             sub_label,
-            radius: 125.0,
+            radius: 120.0,
             track_color,
             progress_color,
             glow_color,
             is_running,
+            is_blind: false,
         }
+    }
+
+    pub fn blind(mut self, blind: bool) -> Self {
+        self.is_blind = blind;
+        self
     }
 
     #[allow(dead_code)]
@@ -46,7 +53,7 @@ impl<'a> TimerDial<'a> {
 
 impl<'a> Widget for TimerDial<'a> {
     fn ui(self, ui: &mut Ui) -> Response {
-        let size = Vec2::splat(self.radius * 2.0 + 40.0);
+        let size = Vec2::splat(self.radius * 2.0 + 36.0);
         let (rect, response) = ui.allocate_exact_size(size, Sense::click());
 
         if ui.is_rect_visible(rect) {
@@ -54,41 +61,22 @@ impl<'a> Widget for TimerDial<'a> {
             let center = rect.center();
             let r = self.radius;
 
-            // Draw soft subtle glow outer ring
-            painter.circle_stroke(
-                center,
-                r + 6.0,
-                Stroke::new(1.0_f32, self.glow_color.linear_multiply(0.25)),
-            );
-
-            // Draw background track ring
+            // Material 3 tonal track background
             painter.circle_stroke(
                 center,
                 r,
                 Stroke::new(10.0_f32, self.track_color),
             );
 
-            // Draw tick marks around the perimeter (60 ticks for seconds/minutes)
-            let tick_count = 60;
-            for i in 0..tick_count {
-                let angle = (i as f32 / tick_count as f32) * 2.0 * PI - PI / 2.0;
-                let is_major = i % 5 == 0;
-                let inner_len = if is_major { 16.0 } else { 8.0 };
-                let tick_color = if is_major {
-                    self.track_color.linear_multiply(2.2)
-                } else {
-                    self.track_color.linear_multiply(1.4)
-                };
-                let inner_r = r - inner_len;
-                let outer_r = r - 2.0;
-
-                let p1 = center + Vec2::new(angle.cos() * inner_r, angle.sin() * inner_r);
-                let p2 = center + Vec2::new(angle.cos() * outer_r, angle.sin() * outer_r);
-                painter.line_segment([p1, p2], Stroke::new(if is_major { 2.0_f32 } else { 1.0_f32 }, tick_color));
-            }
+            // Subtle outer guide
+            painter.circle_stroke(
+                center,
+                r + 8.0,
+                Stroke::new(1.0_f32, self.track_color.linear_multiply(0.6)),
+            );
 
             // Draw progress arc
-            if self.progress > 0.001 {
+            if self.progress > 0.001 && !self.is_blind {
                 let start_angle = -PI / 2.0;
                 let sweep = self.progress * 2.0 * PI;
                 let segments = ((sweep / (2.0 * PI) * 120.0).ceil() as usize).max(4);
@@ -99,32 +87,30 @@ impl<'a> Widget for TimerDial<'a> {
                     points.push(center + Vec2::new(a.cos() * r, a.sin() * r));
                 }
 
-                // Halo glow line
+                // Soft ambient glow
                 painter.add(egui::Shape::line(
                     points.clone(),
-                    Stroke::new(16.0_f32, self.glow_color.linear_multiply(0.35)),
+                    Stroke::new(16.0_f32, self.glow_color.linear_multiply(0.2)),
                 ));
 
-                // Core crisp progress line
+                // Crisp Material 3 rounded progress line
                 painter.add(egui::Shape::line(
                     points,
-                    Stroke::new(9.0_f32, self.progress_color),
+                    Stroke::new(10.0_f32, self.progress_color),
                 ));
 
-                // Indicator needle/dot at arc tip
+                // Capsule tip indicator
                 let end_angle = start_angle + sweep;
                 let tip = center + Vec2::new(end_angle.cos() * r, end_angle.sin() * r);
                 
-                // Outer pulsing glow dot
                 painter.circle_filled(
                     tip,
-                    8.0,
-                    self.glow_color.linear_multiply(0.5),
+                    6.5,
+                    self.glow_color,
                 );
-                // Inner bright dot
                 painter.circle_filled(
                     tip,
-                    4.5,
+                    3.5,
                     Color32::WHITE,
                 );
             }
@@ -134,16 +120,17 @@ impl<'a> Widget for TimerDial<'a> {
                 center - Vec2::new(0.0, 48.0),
                 egui::Align2::CENTER_CENTER,
                 self.phase_name,
-                egui::FontId::proportional(14.0),
+                egui::FontId::proportional(13.0),
                 self.progress_color,
             );
 
-            // Large time readout
+            // Large time readout (or ?? : ?? in Blind Run)
+            let display_time = if self.is_blind { "??:??" } else { self.time_str };
             painter.text(
                 center,
                 egui::Align2::CENTER_CENTER,
-                self.time_str,
-                egui::FontId::monospace(48.0),
+                display_time,
+                egui::FontId::monospace(46.0),
                 Color32::WHITE,
             );
 
@@ -159,7 +146,7 @@ impl<'a> Widget for TimerDial<'a> {
             // Active pulsing indicator symbol when running
             if self.is_running {
                 let pulse_dot = center + Vec2::new(0.0, 68.0);
-                painter.circle_filled(pulse_dot, 3.5, Color32::from_rgb(52, 211, 153));
+                painter.circle_filled(pulse_dot, 3.5, Color32::from_rgb(133, 217, 150));
             }
         }
 

@@ -1,35 +1,54 @@
 # 🌿 FernDoro
 
-> A sleek, high-contrast dark purple study and productivity suite built with **Rust** and **egui**.
+> A sleek, elegant **Material You (Material 3)** study and productivity suite built with **Rust** and **egui**, featuring the **Rogue-Pomodoro Dungeon** game mode.
 
-FernDoro combines three core study methodologies into an integrated native desktop app:
-1. ⏱ **Pomodoro Focus Timer** with glowing dials and precision intervals.
-2. 🔄 **Study Cycle Rotation** to balance multi-subject learning without rigid calendar schedules.
-3. 📊 **Frequency & Habit Tracker** with a GitHub-style consistency heatmap and streak counting.
+FernDoro integrates four core study and gamification methodologies into a native desktop suite:
+1. ⏱ **Pomodoro Focus Timer**: Antialiased circular dial with clean time readouts and customizable rhythms.
+2. 🔄 **Study Cycle Planner & Preset Builder**: Balances multi-course university workloads with 1-click undergrad templates.
+3. 📝 **Test Mode & Exam Auto-Booster**: Schedules exam countdowns and auto-injects needed study points directly into cycle blocks.
+4. ⚔️ **Rogue Dungeon ("The Study Dungeon")**: Gamified focus wagering, Floor Dealer fate cards, anti-cheat focus locks, and permanent relic progression.
+5. 📊 **Frequency & Habit Tracker**: 20+ week GitHub-style consistency heatmap and streak counting.
 
 ---
 
 ## ✨ Features
 
-### ⏱ 1. Pomodoro Focus Engine
-- **Custom Circular Dial**: Antialiased circular gauge with 60 precision ticks, glowing progress sweep, tip indicator, and large digital readout.
-- **Dynamic Phases**: Work sessions, short breaks, and long breaks with customizable intervals.
-- **Direct Cycle Link**: Link any session directly to a Study Cycle subject. Time logged automatically feeds your cycle progress.
-- **Quick Presets**: One-click switching between `25/5 Classic`, `50/10 Deep Work`, and `90/20 Ultradian` rhythms.
-- **Desktop Alerts**: Native Linux notifications (`notify-send`) and bell alerts when intervals complete.
+### ⚔️ 1. Rogue Dungeon (Gamified Focus Mode)
+*Based on the Contrarian Casino & Dungeon Crawl mechanics:*
+- **The Ante (Difficulty Wagering)**: Choose your discipline tier before entering an encounter:
+  - `1x Safe Bet`: Standard timer, up to 2 pauses allowed, base Gold/XP payouts.
+  - `2x Double Down`: 2x rewards, zero pauses. Leaving the window triggers a 10s grace countdown before bust!
+  - `3x Boss Fight`: Minimum 50m block, strict focus lock, rare relic guarantee. Failing wipes your unbanked pot!
+  - `5x Nightmare Boss`: Maximum stakes and reward payout.
+- **The Floor Dealer (Break-Time Casino)**:
+  - Immediately upon clearing a floor, draw 1 of 3 Mystery Fate Cards while your guaranteed break runs in the background.
+  - **Boons**: *Temporal Flux* (+20% rewards), *Golden Touch* (2x Gold), *Soul Shield* (+1 free pause in Hard Mode), *Jackpot* (+75 instant Gold).
+  - **Curses**: *Blind Run* (timer masked as `??:??` until < 60s remain), *Sudden Death* (60s warmup lock), *Double or Nothing* (forces 2x with 3x payout).
+- **The Vault & Relic Shop**:
+  - Bank unbanked gold into your permanent Vault anytime.
+  - Spend gold on relics: *Loaded Dice* (+15% Boon odds), *Merchant's Coin* (+20% gold), *Hourglass of Mercy* (+5s grace period), *Aegis of Will* (start with Soul Shield).
 
-### 🔄 2. Study Cycle Planner & Preset Builder
-- **Rotation-Based Learning**: Avoid burnout by rotating through subjects based on weight and target duration rather than rigid times of day.
+### 🎨 2. Material You 3 Design & Aesthetics
+- **Tonal Color Palette**: Soft lavender (`#D0BCFF`), rich dark violet surfaces (`#1D1926`, `#262133`), and warm rose accents (`#EFB8C8`).
+- **Pill Navigation & Cards**: Full Material 3 rounded pill navigation tabs, generous card roundings (18px), soft outlines without harsh borders.
+- **Calm Elegance**: Designed for low cognitive fatigue and high readability during long study sessions.
+
+### ⏱ 3. Pomodoro Focus Engine
+- **Custom Vector Dial**: Material 3 rounded progress arc with smooth capsule tip indicator and pulse dot.
+- **Direct Cycle Link**: Link any session directly to a Study Cycle subject. Time logged automatically feeds your cycle progress.
+- **Quick Presets**: `25/5 Standard`, `50/10 Lecture Block`, and `90/20 Deep Analytical`.
+- **Desktop Alerts**: Native Linux notifications (`notify-send`) and bell alerts.
+
+### 🔄 4. Study Cycle Planner & Preset Builder
 - **Undergrad Preset Builder**: One-click university semester templates (Computer Science, STEM Heavy, Balanced 4x45m, Finals Sprint) plus custom preset saving.
 - **Upgraded Time Setters**: Quick duration chips (`25m`, `45m`, `60m`, `90m`), delta adjusters (`-15m`, `+15m`), and formatted human-readable durations (`1h 30m`).
-- **Progress Tracking**: Individual subject progress bars plus an overall cycle completion gauge.
 
-### 📝 3. Test Mode (Exams & Auto-Cycle Booster)
+### 📝 5. Test Mode (Exams & Auto-Cycle Booster)
 - **Exam Countdown**: Track upcoming university exams with days remaining, difficulty (1-5), and importance weights.
 - **Automatic Points Injection**: Dynamically calculates urgency (Critical, High, Medium) and auto-boosts required study minutes in your Study Cycle.
 - **Auto-Balance**: Rebalance entire semester rotation queue with a single click.
 
-### 📊 4. Frequency & Habit Tracker
+### 📊 6. Frequency & Habit Tracker
 - **GitHub-Style Consistency Heatmap**: 20+ week visual matrix showcasing study frequency and intensity tiers with interactive tooltips.
 - **Streak Counter**: Real-time current streak and all-time best streak tracking.
 - **Daily Target Progress**: Visual progression bar tracking progress toward daily study goals.

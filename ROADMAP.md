@@ -9,22 +9,27 @@
 ```
 ferndoro/
 ├── assets/
+│   ├── fonts/                # Inter & JetBrains Mono Nerd Font TTF files
 │   └── icon.svg              # Scalable SVG application icon
 ├── src/
 │   ├── main.rs               # Desktop application entry point & native viewport setup
-│   ├── app.rs                # Main FernDoroApp state, tab router, top navigation & views
-│   ├── theme.rs              # Extensible palette system & high-contrast Purple Dark visuals
+│   ├── app.rs                # Main FernDoroApp state, Material You navigation & views
+│   ├── theme.rs              # Material 3 tonal palettes (Material You Amethyst & variants)
 │   ├── storage.rs            # State persistence to ~/.config/ferndoro/ferndoro_state.json
 │   ├── notification.rs       # Async desktop notifications (notify-send) and chimes
 │   ├── pomodoro.rs           # Pomodoro state machine, timers, presets & auto-advance
-│   ├── cycle.rs              # Study cycle planner, subject rotations & progress calculations
+│   ├── cycle.rs              # Study cycle planner, subject rotations & undergrad presets
+│   ├── exam.rs               # Test mode, exam proximity & auto-points calculations
+│   ├── rogue.rs              # Rogue-Pomodoro engine: Antes, Floor Dealer, Fate Cards, Vault & Relics
 │   ├── frequency.rs          # Daily logs, streaks, habit checklists & heatmap aggregation
+│   ├── fonts.rs              # Font definitions and typography hierarchy
+│   ├── icons.rs              # Nerd Font vector glyph constants
 │   └── widgets/
 │       ├── mod.rs            # Widget module re-exports
-│       ├── dial.rs           # Custom circular timer dial with glow & ticks
-│       ├── progress.rs       # High-contrast rounded progression bars
+│       ├── dial.rs           # Material You circular timer dial with blind run support
+│       ├── progress.rs       # Material 3 pill progression bars
 │       ├── heatmap.rs        # GitHub-style consistency matrix / activity grid
-│       └── cards.rs          # Stat cards, glowing frames & status badges
+│       └── cards.rs          # Tonal cards, elevated frames & pill status badges
 ├── Cargo.toml                # Crate manifest and dependency configuration
 ├── .gitignore                # Git ignore rules for Rust builds and local state
 ├── LICENSE                   # MIT License
