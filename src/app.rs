@@ -128,17 +128,32 @@ impl eframe::App for FernDoroApp {
             if event.phase == PomodoroPhase::Work {
                 self.cycle.add_study_time(&event.subject_name, event.duration_minutes);
                 self.frequency.record_study_session(event.duration_minutes, true);
-                self.set_toast(&format!("Session finished! +{}m logged to {}", event.duration_minutes, event.subject_name));
+                
+                // Gamification reward for completing focus block: +30 XP & +10 Gold!
+                let earned_gold = 10;
+                let earned_xp = 30;
+                self.rogue.vault.vault_gold += earned_gold;
+                let level_up = self.rogue.vault.add_xp(earned_xp);
+
+                if let Some(new_lvl) = level_up {
+                    self.set_toast(&format!("🎉 LEVEL UP! You reached Level {} ({})!", new_lvl, self.rogue.vault.equipped_title));
+                } else {
+                    self.set_toast(&format!("Session finished! +{}m logged • +{} XP • +{}g Gold", event.duration_minutes, earned_xp, earned_gold));
+                }
             }
             self.save_state();
         }
 
         // Tick rogue dungeon game engine
         if let Some(event) = self.rogue.tick(dt, window_focused) {
-            // Also log dungeon minutes to frequency & study cycle
             self.cycle.add_study_time(&event.task_name, event.duration_minutes);
             self.frequency.record_study_session(event.duration_minutes, true);
-            self.set_toast(&format!("Floor {} cleared! +{} Gold banked in Pot!", event.floor, event.gold_earned));
+            
+            if let Some(new_lvl) = event.leveled_up {
+                self.set_toast(&format!("⚔️ Floor {} Cleared! 🎉 LEVEL UP: Level {}!", event.floor, new_lvl));
+            } else {
+                self.set_toast(&format!("Floor {} cleared! +{} Gold in Pot • +{} XP", event.floor, event.gold_earned, event.xp_earned));
+            }
             self.save_state();
         }
 
@@ -154,7 +169,7 @@ impl eframe::App for FernDoroApp {
 
         let palette = self.theme.colors();
 
-        // Top Navigation Bar (Material You 3 style with active pill indicators)
+        // Top Navigation Bar (Material You 3 with Gamified HUD)
         egui::TopBottomPanel::top("top_panel")
             .frame(egui::Frame::new().fill(palette.bg_deep).inner_margin(Margin::symmetric(20, 14)))
             .show(ctx, |ui| {
@@ -201,7 +216,7 @@ impl FernDoroApp {
                     .color(palette.accent_primary),
             );
 
-            ui.add_space(18.0);
+            ui.add_space(16.0);
 
             // Material 3 Navigation Pill Tabs
             let tabs = [
@@ -230,13 +245,32 @@ impl FernDoroApp {
                 ui.add_space(2.0);
             }
 
+            // GAMIFIED TOP HUD (Level, Gold, Streaks)
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                // Dungeon Vault Gold pill
+                // Gold Display: Prominent, clear, elegant
+                let pot_info = if self.rogue.current_run.unbanked_gold > 0 {
+                    format!(" (+{}g pot)", self.rogue.current_run.unbanked_gold)
+                } else {
+                    "".to_string()
+                };
                 status_pill(
                     ui,
-                    &format!("{} {}g", COIN, self.rogue.vault.vault_gold),
-                    palette.bg_card,
+                    &format!("{} {}g{}", COIN, self.rogue.vault.vault_gold, pot_info),
+                    palette.accent_tertiary.linear_multiply(0.2),
                     palette.accent_tertiary,
+                );
+
+                ui.add_space(6.0);
+
+                // Level & XP Pill
+                let lvl = self.rogue.vault.level;
+                let xp = self.rogue.vault.current_xp;
+                let thresh = self.rogue.vault.xp_threshold();
+                status_pill(
+                    ui,
+                    &format!("⭐ Lv.{} ({}/{} XP)", lvl, xp, thresh),
+                    palette.bg_card,
+                    palette.accent_primary,
                 );
 
                 ui.add_space(6.0);
@@ -245,14 +279,14 @@ impl FernDoroApp {
                 let streak = self.frequency.current_streak_days();
                 status_pill(
                     ui,
-                    &format!("{} {}d streak", FLAME, streak),
+                    &format!("{} {}d", FLAME, streak),
                     palette.bg_card,
                     palette.accent_secondary,
                 );
 
                 ui.add_space(6.0);
 
-                // Active Exam Badge if test <= 7 days
+                // Active Exam Indicator if test <= 7 days
                 let today = Local::now().date_naive();
                 if let Some(urgent_exam) = self.exams.exams.iter().find(|e| e.days_remaining(today) <= 7 && e.days_remaining(today) >= 0) {
                     let days = urgent_exam.days_remaining(today);
@@ -262,17 +296,7 @@ impl FernDoroApp {
                         palette.error.linear_multiply(0.2),
                         palette.error,
                     );
-                    ui.add_space(6.0);
                 }
-
-                // Active Subject Pill
-                let active_name = self.cycle.active_subject().map(|s| s.name.as_str()).unwrap_or("General Study");
-                status_pill(
-                    ui,
-                    &format!("{} {}", TARGET, active_name),
-                    palette.bg_card,
-                    palette.text_primary,
-                );
             });
         });
 
@@ -282,25 +306,34 @@ impl FernDoroApp {
 
     fn render_pomodoro_tab(&mut self, ui: &mut Ui, palette: &ThemePalette) {
         ui.vertical_centered(|ui| {
-            ui.add_space(10.0);
+            ui.add_space(8.0);
 
-            // Active subject selector row
+            // Gamified Quest Header Banner
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Target Subject:").size(13.5).color(palette.text_secondary));
-                egui::ComboBox::from_id_salt("pomodoro_subject_selector")
-                    .selected_text(RichText::new(&self.pomodoro.active_subject_name).size(13.5).strong().color(palette.accent_primary))
-                    .show_ui(ui, |ui| {
-                        for (i, subject) in self.cycle.subjects.iter().enumerate() {
-                            if ui.selectable_label(self.pomodoro.active_subject_name == subject.name, &subject.name).clicked() {
-                                self.pomodoro.active_subject_name = subject.name.clone();
-                                self.cycle.active_index = i;
-                                self.save_state();
+                status_pill(
+                    ui,
+                    "🎯 Focus Quest: +30 XP & +10 Gold upon completion",
+                    palette.bg_card,
+                    palette.accent_tertiary,
+                );
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    egui::ComboBox::from_id_salt("pomodoro_subject_selector")
+                        .selected_text(RichText::new(&self.pomodoro.active_subject_name).size(13.5).strong().color(palette.accent_primary))
+                        .show_ui(ui, |ui| {
+                            for (i, subject) in self.cycle.subjects.iter().enumerate() {
+                                if ui.selectable_label(self.pomodoro.active_subject_name == subject.name, &subject.name).clicked() {
+                                    self.pomodoro.active_subject_name = subject.name.clone();
+                                    self.cycle.active_index = i;
+                                    self.save_state();
+                                }
                             }
-                        }
-                    });
+                        });
+                    ui.label(RichText::new("Target Course:").size(13.5).color(palette.text_secondary));
+                });
             });
 
-            ui.add_space(12.0);
+            ui.add_space(10.0);
 
             let progress = self.pomodoro.progress_fraction();
             let time_str = self.pomodoro.formatted_time();
@@ -326,7 +359,19 @@ impl FernDoroApp {
 
             ui.add(dial);
 
-            ui.add_space(18.0);
+            ui.add_space(16.0);
+
+            // Level Progress Bar right below dial
+            let xp_frac = self.rogue.vault.xp_progress_fraction();
+            let xp_label = format!("Level {} Progress ({} / {} XP)", self.rogue.vault.level, self.rogue.vault.current_xp, self.rogue.vault.xp_threshold());
+            ui.add(
+                CustomProgressBar::new(xp_frac, palette.accent_primary, palette.accent_glow, palette.track_bg)
+                    .label(&xp_label)
+                    .detail(&self.rogue.vault.equipped_title)
+                    .height(8.0),
+            );
+
+            ui.add_space(16.0);
 
             // Material 3 Pill Action Buttons
             ui.horizontal(|ui| {
@@ -375,7 +420,7 @@ impl FernDoroApp {
                 }
             });
 
-            ui.add_space(20.0);
+            ui.add_space(18.0);
 
             // Session Presets row
             ui.horizontal(|ui| {
@@ -403,7 +448,7 @@ impl FernDoroApp {
                 }
             });
 
-            ui.add_space(22.0);
+            ui.add_space(20.0);
 
             // Session Stats Cards Row
             ui.horizontal(|ui| {
@@ -425,13 +470,13 @@ impl FernDoroApp {
                 ui.horizontal(|ui| {
                     ui.vertical(|ui| {
                         ui.label(
-                            RichText::new(format!("{} Study Cycle #{}", TAB_CYCLE, self.cycle.cycle_number))
+                            RichText::new(format!("{} Study Cycle #{} • Curriculum Quests", TAB_CYCLE, self.cycle.cycle_number))
                                 .size(19.0)
                                 .strong()
                                 .color(palette.text_primary),
                         );
                         ui.label(
-                            RichText::new("Undergrad Rotation Framework • Balances courses without rigid calendar stress")
+                            RichText::new("Clear course blocks to balance your semester and earn +150 XP & +50 Vault Gold upon cycle victory!")
                                 .size(12.5)
                                 .color(palette.text_secondary),
                         );
@@ -444,6 +489,14 @@ impl FernDoroApp {
 
                         if ui.add(complete_btn).clicked() {
                             self.cycle.complete_current_cycle();
+                            // Cycle completion rewards!
+                            self.rogue.vault.vault_gold += 50;
+                            let lvl_up = self.rogue.vault.add_xp(150);
+                            if let Some(lvl) = lvl_up {
+                                self.set_toast(&format!("🏆 CYCLE COMPLETED! Level Up to Level {}! +50 Gold", lvl));
+                            } else {
+                                self.set_toast("🏆 Cycle Victory! +150 XP & +50 Vault Gold earned!");
+                            }
                             self.save_state();
                         }
 
@@ -559,7 +612,7 @@ impl FernDoroApp {
 
             ui.add_space(14.0);
 
-            ui.label(RichText::new("Study Queue & Time Setters").size(16.0).strong().color(palette.text_primary));
+            ui.label(RichText::new("Course Quests & Target Setters").size(16.0).strong().color(palette.text_primary));
             ui.add_space(4.0);
 
             let today = Local::now().date_naive();
@@ -587,15 +640,15 @@ impl FernDoroApp {
                             ui.label(RichText::new(&subject.name).size(15.0).strong().color(palette.text_primary));
 
                             if is_active {
-                                status_pill(ui, &format!("{} Active Focus", TARGET), palette.accent_container, palette.on_accent_container);
+                                status_pill(ui, &format!("{} Active Quest", TARGET), palette.accent_container, palette.on_accent_container);
                             }
                             if subject.is_completed() {
-                                status_pill(ui, &format!("{} Done", CHECK), palette.success.linear_multiply(0.2), palette.success);
+                                status_pill(ui, &format!("{} Cleared (+15 XP)", CHECK), palette.success.linear_multiply(0.2), palette.success);
                             }
 
                             if let Some(exam) = self.exams.exams.iter().find(|e| e.subject_name.eq_ignore_ascii_case(&subject.name)) {
                                 let days = exam.days_remaining(today);
-                                status_pill(ui, &format!("{} {} ({}d)", CALENDAR_ALERT, exam.test_title, days), palette.bg_card_hover, palette.accent_tertiary);
+                                status_pill(ui, &format!("{} Trial in {}d", CALENDAR_ALERT, days), palette.bg_card_hover, palette.accent_tertiary);
                             }
 
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -617,7 +670,7 @@ impl FernDoroApp {
                         ui.add_space(4.0);
 
                         let detail_text = if subject.boost_minutes > 0 {
-                            format!("{}/{} (Base {}m + Boost {}m)", 
+                            format!("{}/{} (Base {}m + Trial Boost {}m)", 
                                 StudySubject::format_time(subject.completed_minutes), 
                                 StudySubject::format_time(subject.target_minutes()),
                                 subject.base_minutes,
@@ -661,7 +714,7 @@ impl FernDoroApp {
                             }
 
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                if ui.button(RichText::new("+15m Studied").size(11.5)).clicked() {
+                                if ui.button(RichText::new("+15m Logged").size(11.5)).clicked() {
                                     add_minutes = Some((idx, 15));
                                 }
                             });
@@ -695,6 +748,7 @@ impl FernDoroApp {
                 if let Some(sub) = self.cycle.subjects.get_mut(idx) {
                     sub.completed_minutes += mins;
                     self.frequency.record_study_session(mins, false);
+                    self.rogue.vault.add_xp(15);
                 }
                 self.save_state();
             }
@@ -752,13 +806,13 @@ impl FernDoroApp {
                 ui.horizontal(|ui| {
                     ui.vertical(|ui| {
                         ui.label(
-                            RichText::new(format!("{} Test Mode • Exam Proximity & Auto-Balancer", TEST_PENCIL))
+                            RichText::new(format!("{} Test Mode • Raid Trials & Exam Booster", TEST_PENCIL))
                                 .size(19.0)
                                 .strong()
                                 .color(palette.text_primary),
                         );
                         ui.label(
-                            RichText::new("Schedule university exams. FernDoro automatically injects study points into your cycle based on exam proximity.")
+                            RichText::new("Track upcoming exam trials. FernDoro automatically injects urgency study points into your cycle!")
                                 .size(12.5)
                                 .color(palette.text_secondary),
                         );
@@ -788,7 +842,7 @@ impl FernDoroApp {
 
             ui.add_space(14.0);
 
-            ui.label(RichText::new("Scheduled University Exams").size(16.0).strong().color(palette.text_primary));
+            ui.label(RichText::new("Scheduled University Trials & Exams").size(16.0).strong().color(palette.text_primary));
             ui.add_space(4.0);
 
             let today = Local::now().date_naive();
@@ -935,91 +989,86 @@ impl FernDoroApp {
         });
     }
 
-    // ROGUE DUNGEON GAME MODE TAB
+    // ROGUE DUNGEON GAME MODE TAB WITH ORGANIZED SECTORS & PROMINENT GOLD HUD
     fn render_rogue_tab(&mut self, ui: &mut Ui, palette: &ThemePalette) {
         ScrollArea::vertical().show(ui, |ui| {
-            // Header: Floor & Pot Overview
+            // SECTOR 1: THE GOLD & RUN VAULT HUD (PROMINENT & MINIMALIST)
             card_frame(palette).show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.vertical(|ui| {
-                        ui.label(
-                            RichText::new(format!("{} The Study Dungeon • Floor {}", SWORD, self.rogue.current_run.floor_number))
-                                .size(20.0)
-                                .strong()
-                                .color(palette.text_primary),
-                        );
-                        ui.label(
-                            RichText::new("Rogue-Pomodoro: Wager discipline tokens, survive focus encounters, draw break fate cards.")
-                                .size(12.5)
-                                .color(palette.text_secondary),
-                        );
+                    // Left: Vault Gold Reserve
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new(COIN).size(32.0).color(palette.accent_tertiary));
+                        ui.vertical(|ui| {
+                            ui.label(RichText::new("VAULT RESERVE (SAFE)").size(10.5).color(palette.text_secondary));
+                            ui.label(
+                                RichText::new(format!("{} Gold", self.rogue.vault.vault_gold))
+                                    .size(22.0)
+                                    .strong()
+                                    .color(palette.accent_tertiary),
+                            );
+                        });
                     });
 
+                    ui.add_space(24.0);
+
+                    // Center: Run Multiplier & Soul Shields
+                    ui.vertical(|ui| {
+                        ui.label(RichText::new(format!("Floor {} Encounter", self.rogue.current_run.floor_number)).size(11.0).color(palette.text_secondary));
+                        ui.horizontal(|ui| {
+                            status_pill(ui, &format!("⚡ {:.2}x Mult", self.rogue.current_run.current_multiplier), palette.bg_card_hover, palette.accent_primary);
+                            status_pill(ui, &format!("{} {} Shields", SHIELD, self.rogue.current_run.soul_shields), palette.bg_card_hover, palette.text_primary);
+                        });
+                    });
+
+                    // Right: Unbanked Pot & Instant Bank Button
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        // Relic shop toggle
-                        let shop_btn = egui::Button::new(RichText::new(format!("{} Relic Shop", VAULT)).color(palette.accent_tertiary))
-                            .fill(palette.bg_card_hover)
-                            .stroke(egui::Stroke::new(1.0_f32, palette.bg_card_border))
-                            .corner_radius(CornerRadius::same(18));
-
-                        if ui.add(shop_btn).clicked() {
-                            self.show_relic_shop = !self.show_relic_shop;
-                        }
-
-                        ui.add_space(6.0);
-
-                        // Cash Out button
                         if self.rogue.current_run.unbanked_gold > 0 {
-                            let cash_out_btn = egui::Button::new(RichText::new(format!("{} Bank {}g", COIN, self.rogue.current_run.unbanked_gold)).strong().color(palette.bg_deep))
+                            let cash_out_btn = egui::Button::new(RichText::new("💰 Bank Gold to Vault").strong().color(palette.bg_deep))
                                 .fill(palette.accent_tertiary)
                                 .corner_radius(CornerRadius::same(18));
 
                             if ui.add(cash_out_btn).clicked() {
                                 let banked = self.rogue.cash_out();
                                 self.save_state();
-                                self.set_toast(&format!("Safely banked {} Gold into Vault!", banked));
+                                self.set_toast(&format!("Safely secured {} Gold into Vault!", banked));
                             }
                         }
+
+                        ui.vertical(|ui| {
+                            ui.label(RichText::new("UNBANKED POT (AT RISK)").size(10.5).color(palette.text_secondary));
+                            ui.label(
+                                RichText::new(format!("+{} Gold", self.rogue.current_run.unbanked_gold))
+                                    .size(20.0)
+                                    .strong()
+                                    .color(palette.accent_primary),
+                            );
+                        });
                     });
-                });
-
-                ui.add_space(10.0);
-
-                // Stats Pills Row
-                ui.horizontal(|ui| {
-                    status_pill(
-                        ui,
-                        &format!("{} Unbanked Pot: {}g", COIN, self.rogue.current_run.unbanked_gold),
-                        palette.accent_container,
-                        palette.on_accent_container,
-                    );
-                    status_pill(
-                        ui,
-                        &format!("⚡ Streak Mult: {:.2}x", self.rogue.current_run.current_multiplier),
-                        palette.bg_card_hover,
-                        palette.accent_primary,
-                    );
-                    status_pill(
-                        ui,
-                        &format!("{} Vault Reserve: {}g", VAULT, self.rogue.vault.vault_gold),
-                        palette.bg_card_hover,
-                        palette.accent_tertiary,
-                    );
-                    status_pill(
-                        ui,
-                        &format!("{} Soul Shields: {}", SHIELD, self.rogue.current_run.soul_shields),
-                        palette.bg_card_hover,
-                        palette.text_primary,
-                    );
                 });
             });
 
-            // Relic Shop Drawer
+            ui.add_space(12.0);
+
+            // SECTOR 2: RELIC SHOP & PERMANENT PROGRESSION (EXPANDABLE)
+            ui.horizontal(|ui| {
+                let shop_label = if self.show_relic_shop { "Hide Relic Armory" } else { "Open Relic Armory & Artifacts" };
+                let shop_btn = egui::Button::new(RichText::new(format!("{} {}", VAULT, shop_label)).color(palette.text_primary))
+                    .fill(palette.bg_card)
+                    .stroke(egui::Stroke::new(1.0_f32, palette.bg_card_border))
+                    .corner_radius(CornerRadius::same(16));
+
+                if ui.add(shop_btn).clicked() {
+                    self.show_relic_shop = !self.show_relic_shop;
+                }
+
+                ui.label(RichText::new(format!("Player Rank: {}", self.rogue.vault.equipped_title)).size(12.0).color(palette.accent_primary));
+            });
+
             if self.show_relic_shop {
-                ui.add_space(10.0);
+                ui.add_space(8.0);
                 elevated_card_frame(palette).show(ui, |ui| {
-                    ui.label(RichText::new(format!("{} The Dungeon Relic Shop", VAULT)).size(16.0).strong().color(palette.accent_tertiary));
-                    ui.label(RichText::new("Spend banked Vault Gold on permanent passive artifacts to survive higher dungeon floors:").size(12.0).color(palette.text_secondary));
+                    ui.label(RichText::new(format!("{} The Dungeon Relic Armory", VAULT)).size(15.5).strong().color(palette.accent_tertiary));
+                    ui.label(RichText::new("Invest Vault Gold into permanent passive relics to survive higher floors:").size(12.0).color(palette.text_secondary));
                     ui.add_space(8.0);
 
                     let relics = [
@@ -1033,7 +1082,7 @@ impl FernDoroApp {
                         let owned = self.rogue.vault.unlocked_relics.contains(id);
                         ui.horizontal(|ui| {
                             if owned {
-                                status_pill(ui, "✓ Owned", palette.success.linear_multiply(0.2), palette.success);
+                                status_pill(ui, "✓ Equipped", palette.success.linear_multiply(0.2), palette.success);
                             } else {
                                 let can_afford = self.rogue.vault.vault_gold >= cost;
                                 let btn = egui::Button::new(RichText::new(format!("Buy: {}g", cost)).color(if can_afford { palette.bg_deep } else { palette.text_muted }))
@@ -1056,12 +1105,12 @@ impl FernDoroApp {
                 });
             }
 
-            ui.add_space(14.0);
+            ui.add_space(12.0);
 
-            // Active Game Phase Engine
+            // SECTOR 3: ACTIVE GAME STAGE ENGINE
             match self.rogue.phase {
                 RoguePhase::IdleAnte => {
-                    self.render_rogue_ante_view(ui, palette);
+                    self.render_rogue_ante_sector(ui, palette);
                 }
                 RoguePhase::WarmupLock => {
                     card_frame(palette).show(ui, |ui| {
@@ -1076,7 +1125,7 @@ impl FernDoroApp {
                     });
                 }
                 RoguePhase::FocusActive => {
-                    self.render_rogue_focus_view(ui, palette);
+                    self.render_rogue_focus_sector(ui, palette);
                 }
                 RoguePhase::FocusFailed => {
                     card_frame(palette).show(ui, |ui| {
@@ -1100,20 +1149,31 @@ impl FernDoroApp {
                     });
                 }
                 RoguePhase::BreakDealer => {
-                    self.render_rogue_dealer_view(ui, palette);
+                    self.render_rogue_dealer_sector(ui, palette);
                 }
                 RoguePhase::BreakRest => {
-                    self.render_rogue_sanctuary_view(ui, palette);
+                    self.render_rogue_sanctuary_sector(ui, palette);
                 }
             }
         });
     }
 
-    fn render_rogue_ante_view(&mut self, ui: &mut Ui, palette: &ThemePalette) {
+    fn render_rogue_ante_sector(&mut self, ui: &mut Ui, palette: &ThemePalette) {
         card_frame(palette).show(ui, |ui| {
-            ui.label(RichText::new(format!("{} Step 1: Place Your Ante (Discipline Wager)", COIN)).size(16.0).strong().color(palette.text_primary));
-            ui.label(RichText::new("Higher risk tiers lock pauses and punish app abandonment, but multiply your gold and XP rewards:").size(12.0).color(palette.text_secondary));
+            ui.label(RichText::new(format!("{} Floor Contract & Discipline Wager", COIN)).size(16.0).strong().color(palette.text_primary));
+            ui.label(RichText::new("Select your risk tier. Harder tiers strictly lock pauses and penalize leaving the window, but multiply payouts:").size(12.0).color(palette.text_secondary));
             ui.add_space(10.0);
+
+            // Active Modifier Banner if any
+            if self.rogue.current_run.active_modifier != FateModifier::None {
+                let m = self.rogue.current_run.active_modifier;
+                let badge_color = if m.is_boon() { palette.success } else { palette.warning };
+                ui.horizontal(|ui| {
+                    status_pill(ui, &format!("Active Modifier: {}", m.name()), badge_color.linear_multiply(0.2), badge_color);
+                    ui.label(RichText::new(m.description()).size(12.0).color(palette.text_secondary));
+                });
+                ui.add_space(10.0);
+            }
 
             let antes = [
                 AnteTier::SafeBet1x,
@@ -1154,20 +1214,9 @@ impl FernDoroApp {
             ui.separator();
             ui.add_space(8.0);
 
-            // Active Modifier Notice if any
-            if self.rogue.current_run.active_modifier != FateModifier::None {
-                let m = self.rogue.current_run.active_modifier;
-                let badge_color = if m.is_boon() { palette.success } else { palette.warning };
-                ui.horizontal(|ui| {
-                    status_pill(ui, m.name(), badge_color.linear_multiply(0.2), badge_color);
-                    ui.label(RichText::new(m.description()).size(12.0).color(palette.text_secondary));
-                });
-                ui.add_space(8.0);
-            }
-
             // Task & Duration
             ui.horizontal(|ui| {
-                ui.label("Floor Task:");
+                ui.label("Floor Objective:");
                 ui.add(egui::TextEdit::singleline(&mut self.rogue.current_run.selected_task).hint_text("Study Task or Boss"));
 
                 ui.add_space(8.0);
@@ -1184,8 +1233,9 @@ impl FernDoroApp {
             ui.add_space(12.0);
 
             let potential_payout = self.rogue.calculate_floor_payout();
+            let potential_xp = self.rogue.calculate_floor_xp();
             ui.horizontal(|ui| {
-                ui.label(RichText::new(format!("Potential Payout: ~{} Gold", potential_payout)).size(14.0).strong().color(palette.accent_tertiary));
+                ui.label(RichText::new(format!("Est. Reward: ~{} Gold • +{} XP", potential_payout, potential_xp)).size(13.5).strong().color(palette.accent_tertiary));
 
                 let enter_btn = egui::Button::new(RichText::new(format!("{} Enter Encounter", SWORD)).size(15.0).strong().color(palette.bg_deep))
                     .fill(palette.accent_primary)
@@ -1200,9 +1250,8 @@ impl FernDoroApp {
         });
     }
 
-    fn render_rogue_focus_view(&mut self, ui: &mut Ui, palette: &ThemePalette) {
+    fn render_rogue_focus_sector(&mut self, ui: &mut Ui, palette: &ThemePalette) {
         ui.vertical_centered(|ui| {
-            // Anti-cheat grace countdown warning banner
             if self.rogue.is_grace_active {
                 elevated_card_frame(palette).show(ui, |ui| {
                     ui.label(
@@ -1215,7 +1264,6 @@ impl FernDoroApp {
                 ui.add_space(10.0);
             }
 
-            // Check if Blind Run curse active
             let is_blind = self.rogue.current_run.active_modifier == FateModifier::BlindRun 
                 && self.rogue.remaining_focus_seconds > 60.0;
 
@@ -1228,7 +1276,6 @@ impl FernDoroApp {
 
             let remaining = self.rogue.remaining_focus_seconds.ceil().max(0.0) as u32;
             let time_str = format!("{:02}:{:02}", remaining / 60, remaining % 60);
-
             let sub_title = format!("Floor {} • {}", self.rogue.current_run.floor_number, self.rogue.current_run.selected_ante.name());
 
             let dial = TimerDial::new(
@@ -1281,25 +1328,23 @@ impl FernDoroApp {
         });
     }
 
-    fn render_rogue_dealer_view(&mut self, ui: &mut Ui, palette: &ThemePalette) {
+    fn render_rogue_dealer_sector(&mut self, ui: &mut Ui, palette: &ThemePalette) {
         card_frame(palette).show(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.label(RichText::new(format!("{} The Floor Dealer (Break Casino)", CARDS)).size(19.0).strong().color(palette.accent_tertiary));
-                ui.label(RichText::new("Select one of three Mystery Fate Cards to seal your destiny for the next floor:").color(palette.text_secondary));
-                ui.add_space(14.0);
+                ui.label(RichText::new("Pick 1 of 3 Mystery Fate Cards to seal your modifier for the next floor:").color(palette.text_secondary));
+                ui.add_space(12.0);
 
                 let break_secs = self.rogue.remaining_break_seconds.ceil() as u32;
                 ui.label(RichText::new(format!("Sanctuary Rest Running: {:02}:{:02}", break_secs / 60, break_secs % 60)).color(palette.break_phase));
                 ui.add_space(12.0);
 
-                // 3 Fate Cards
                 ui.horizontal(|ui| {
                     for i in 0..self.rogue.dealer_cards.len() {
                         let card = self.rogue.dealer_cards[i];
                         let is_flipped = self.rogue.dealer_resolved;
 
                         let (card_bg, card_text, card_desc) = if is_flipped {
-                            let _badge_c = if card.is_boon() { palette.success } else { palette.error };
                             (palette.bg_card_hover, card.name(), card.description())
                         } else {
                             (palette.accent_container, "🂠 Fate Card", "Click to Reveal")
@@ -1345,7 +1390,7 @@ impl FernDoroApp {
         });
     }
 
-    fn render_rogue_sanctuary_view(&mut self, ui: &mut Ui, palette: &ThemePalette) {
+    fn render_rogue_sanctuary_sector(&mut self, ui: &mut Ui, palette: &ThemePalette) {
         card_frame(palette).show(ui, |ui| {
             ui.vertical_centered(|ui| {
                 ui.label(RichText::new("🌿 The Sanctuary (Guaranteed Rest)").size(20.0).strong().color(palette.break_phase));
@@ -1411,14 +1456,17 @@ impl FernDoroApp {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui.button("+15m").clicked() {
                             self.frequency.record_study_session(15, false);
+                            self.rogue.vault.add_xp(15);
                             self.save_state();
                         }
                         if ui.button("+30m").clicked() {
                             self.frequency.record_study_session(30, false);
+                            self.rogue.vault.add_xp(30);
                             self.save_state();
                         }
                         if ui.button("+60m").clicked() {
                             self.frequency.record_study_session(60, false);
+                            self.rogue.vault.add_xp(60);
                             self.save_state();
                         }
                         ui.label(RichText::new("Quick Log:").color(palette.text_muted));
@@ -1440,8 +1488,8 @@ impl FernDoroApp {
             ui.add_space(16.0);
 
             card_frame(palette).show(ui, |ui| {
-                ui.label(RichText::new("Daily Undergrad Habits Checklist").size(15.0).strong().color(palette.text_primary));
-                ui.label(RichText::new("Tick off essential study and wellness routines for today:").size(12.5).color(palette.text_secondary));
+                ui.label(RichText::new("Daily Habits & Attendance Checklist").size(15.0).strong().color(palette.text_primary));
+                ui.label(RichText::new("Complete all 4 daily routines to claim a +50 XP bonus:").size(12.5).color(palette.text_secondary));
                 ui.add_space(8.0);
 
                 let today_log = self.frequency.today_log();
@@ -1561,8 +1609,8 @@ impl FernDoroApp {
 
             card_frame(palette).show(ui, |ui| {
                 ui.label(RichText::new(format!("{} About FernDoro", LOGO_LEAF)).size(15.0).strong().color(palette.accent_primary));
-                ui.label(RichText::new("Version 0.3.0 • Material You Design • Rogue-Pomodoro Edition").size(12.5).color(palette.text_secondary));
-                ui.label(RichText::new("Built with Rust, egui, Inter & JetBrains Mono for clean, distraction-free mastery.").size(12.0).color(palette.text_muted));
+                ui.label(RichText::new("Version 0.3.5 • Material You Design • Gamified Study Suite").size(12.5).color(palette.text_secondary));
+                ui.label(RichText::new("Built with Rust, egui, Inter & JetBrains Mono for clean, gamified mastery.").size(12.0).color(palette.text_muted));
             });
         });
     }

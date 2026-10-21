@@ -144,7 +144,7 @@ impl Default for CurrentRun {
             pauses_used: 0,
             floor_duration_mins: 25,
             selected_ante: AnteTier::SafeBet1x,
-            selected_task: "Floor 1: Mathematical Foundations".to_string(),
+            selected_task: "Floor 1: Deep Analytical Work".to_string(),
             is_boss_floor: false,
         }
     }
@@ -152,6 +152,8 @@ impl Default for CurrentRun {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserVault {
+    pub level: u32,
+    pub current_xp: u32,
     pub vault_gold: u32,
     pub total_dungeon_minutes: u32,
     pub highest_floor: u32,
@@ -163,13 +165,55 @@ pub struct UserVault {
 impl Default for UserVault {
     fn default() -> Self {
         Self {
-            vault_gold: 50,
+            level: 1,
+            current_xp: 0,
+            vault_gold: 60,
             total_dungeon_minutes: 0,
             highest_floor: 1,
             total_runs_cashed: 0,
             unlocked_relics: HashSet::new(),
-            equipped_title: "Novice Dungeon Crawler".to_string(),
+            equipped_title: "Novice Scribe".to_string(),
         }
+    }
+}
+
+impl UserVault {
+    pub fn xp_threshold(&self) -> u32 {
+        (self.level * 100).max(100)
+    }
+
+    pub fn xp_progress_fraction(&self) -> f32 {
+        let thresh = self.xp_threshold();
+        (self.current_xp as f32 / thresh as f32).clamp(0.0, 1.0)
+    }
+
+    /// Adds XP and returns Some(new_level) if leveled up
+    pub fn add_xp(&mut self, xp: u32) -> Option<u32> {
+        self.current_xp += xp;
+        let mut leveled_up = false;
+
+        while self.current_xp >= self.xp_threshold() {
+            self.current_xp -= self.xp_threshold();
+            self.level += 1;
+            leveled_up = true;
+            self.update_title();
+        }
+
+        if leveled_up {
+            Some(self.level)
+        } else {
+            None
+        }
+    }
+
+    pub fn update_title(&mut self) {
+        self.equipped_title = match self.level {
+            1..=2 => "Apprentice Scribe".to_string(),
+            3..=4 => "Dungeon Scholar".to_string(),
+            5..=7 => "Chrono-Adept".to_string(),
+            8..=11 => "Arcane Strategist".to_string(),
+            _ => "Grand Chronomancer".to_string(),
+        };
     }
 }
 
@@ -220,7 +264,7 @@ impl RogueDungeonState {
     }
 
     pub fn calculate_floor_payout(&self) -> u32 {
-        let base_gold = (self.current_run.floor_duration_mins as f32 * 0.5).ceil() as u32; // ~12-15 gold per 25m
+        let base_gold = (self.current_run.floor_duration_mins as f32 * 0.5).ceil() as u32;
         let ante_mult = self.current_run.selected_ante.multiplier();
         let run_mult = self.current_run.current_multiplier;
 
@@ -233,21 +277,24 @@ impl RogueDungeonState {
             mod_mult *= 3.0;
         }
 
-        // Relic bonus: Merchant's coin (+20% gold)
         let relic_mult = if self.vault.unlocked_relics.contains("merchants_coin") { 1.2 } else { 1.0 };
 
         (base_gold as f32 * ante_mult * run_mult * mod_mult * relic_mult).round() as u32
     }
 
+    pub fn calculate_floor_xp(&self) -> u32 {
+        let base_xp = self.current_run.floor_duration_mins * 2;
+        let ante_mult = self.current_run.selected_ante.multiplier();
+        (base_xp as f32 * ante_mult).round() as u32
+    }
+
     pub fn start_encounter(&mut self) {
-        // Enforce ante restrictions
         if self.current_run.active_modifier == FateModifier::DoubleOrNothing {
             if self.current_run.selected_ante == AnteTier::SafeBet1x {
                 self.current_run.selected_ante = AnteTier::DoubleDown2x;
             }
         }
 
-        // Apply Aegis of Will relic if run starting on floor 1
         if self.current_run.floor_number == 1 && self.vault.unlocked_relics.contains("aegis_of_will") && self.current_run.soul_shields == 0 {
             self.current_run.soul_shields = 1;
         }
@@ -256,7 +303,6 @@ impl RogueDungeonState {
         self.grace_period_seconds = self.max_grace_period();
         self.is_grace_active = false;
 
-        // Check for Sudden Death warmup curse
         if self.current_run.active_modifier == FateModifier::SuddenDeath {
             self.phase = RoguePhase::WarmupLock;
             self.remaining_warmup_seconds = 60.0;
@@ -276,9 +322,8 @@ impl RogueDungeonState {
             self.current_run.pauses_used += 1;
             true
         } else if self.current_run.soul_shields > 0 {
-            // Consume soul shield for pause forgiveness!
             self.current_run.soul_shields -= 1;
-            Notifier::notify("FernDoro Dungeon", "Soul Shield absorbed the pause! Hard Mode penalty avoided.");
+            Notifier::notify("FernDoro Dungeon", "Soul Shield absorbed the pause! Penalty avoided.");
             true
         } else {
             false
@@ -296,19 +341,16 @@ impl RogueDungeonState {
                 }
             }
             RoguePhase::FocusActive => {
-                // Focus enforcement in Double Down / Boss fights
                 let is_strict_mode = self.current_run.selected_ante != AnteTier::SafeBet1x;
                 if is_strict_mode {
                     if !window_focused {
                         self.is_grace_active = true;
                         self.grace_period_seconds -= dt;
                         if self.grace_period_seconds <= 0.0 {
-                            // Bust! Failed session
                             self.trigger_bust();
                             return None;
                         }
                     } else {
-                        // User refocused, recover grace period
                         self.is_grace_active = false;
                         self.grace_period_seconds = (self.grace_period_seconds + dt * 2.0).min(self.max_grace_period());
                     }
@@ -322,7 +364,6 @@ impl RogueDungeonState {
                 }
             }
             RoguePhase::BreakDealer | RoguePhase::BreakRest => {
-                // Mandatory break timer continues in background
                 self.remaining_break_seconds -= dt;
                 if self.remaining_break_seconds <= 0.0 {
                     self.remaining_break_seconds = 0.0;
@@ -337,7 +378,7 @@ impl RogueDungeonState {
 
     pub fn trigger_bust(&mut self) {
         self.phase = RoguePhase::FocusFailed;
-        self.current_run.unbanked_gold = 0; // Wipe unbanked pot!
+        self.current_run.unbanked_gold = 0;
         self.current_run.current_multiplier = 1.0;
         self.is_grace_active = false;
 
@@ -349,24 +390,23 @@ impl RogueDungeonState {
 
     pub fn complete_floor(&mut self) -> FloorCompletedEvent {
         let earned_gold = self.calculate_floor_payout();
+        let earned_xp = self.calculate_floor_xp();
+
         self.current_run.unbanked_gold += earned_gold;
         self.vault.total_dungeon_minutes += self.current_run.floor_duration_mins;
+
+        let leveled_up = self.vault.add_xp(earned_xp);
 
         if self.current_run.floor_number > self.vault.highest_floor {
             self.vault.highest_floor = self.current_run.floor_number;
         }
 
-        // Increment run multiplier (+0.25x per floor)
         self.current_run.current_multiplier += 0.25;
-
-        // Reset modifier after consumption
         self.current_run.active_modifier = FateModifier::None;
 
-        // Setup guaranteed break (5 min standard, 10 min for boss)
         let break_mins = if self.current_run.is_boss_floor { 10 } else { 5 };
         self.remaining_break_seconds = (break_mins * 60) as f32;
 
-        // Populate 3 fate cards for Floor Dealer
         self.populate_dealer_cards();
         self.card_drawn = None;
         self.dealer_resolved = false;
@@ -374,14 +414,16 @@ impl RogueDungeonState {
 
         Notifier::notify(
             "⚔️ Floor Cleared!",
-            &format!("Floor {} conquered! +{} Gold added to your unbanked pot. Step into Sanctuary.", self.current_run.floor_number, earned_gold),
+            &format!("Floor {} conquered! +{} Gold in Pot • +{} XP. Enter Sanctuary.", self.current_run.floor_number, earned_gold, earned_xp),
         );
 
         FloorCompletedEvent {
             floor: self.current_run.floor_number,
             gold_earned: earned_gold,
+            xp_earned: earned_xp,
             task_name: self.current_run.selected_task.clone(),
             duration_minutes: self.current_run.floor_duration_mins,
+            leveled_up,
         }
     }
 
@@ -406,7 +448,7 @@ impl RogueDungeonState {
         let mut cards = Vec::with_capacity(3);
         for i in 0..3 {
             let roll = ((seed + i * 7919) % 100) as u32;
-            let boon_threshold = if has_loaded_dice { 70 } else { 55 }; // 70% chance of boon with Loaded Dice
+            let boon_threshold = if has_loaded_dice { 70 } else { 55 };
             if roll < boon_threshold {
                 let idx = ((seed / (i + 1) as u128) % boons.len() as u128) as usize;
                 cards.push(boons[idx]);
@@ -425,7 +467,6 @@ impl RogueDungeonState {
             self.card_drawn = Some(drawn);
             self.dealer_resolved = true;
 
-            // Apply card immediate effects
             match drawn {
                 FateModifier::Jackpot => {
                     self.current_run.unbanked_gold += 75;
@@ -453,7 +494,6 @@ impl RogueDungeonState {
         self.vault.vault_gold += gold_to_bank;
         self.vault.total_runs_cashed += 1;
 
-        // Reset current run
         self.current_run = CurrentRun::default();
         self.phase = RoguePhase::IdleAnte;
 
@@ -479,6 +519,8 @@ impl RogueDungeonState {
 pub struct FloorCompletedEvent {
     pub floor: u32,
     pub gold_earned: u32,
+    pub xp_earned: u32,
     pub task_name: String,
     pub duration_minutes: u32,
+    pub leveled_up: Option<u32>,
 }
